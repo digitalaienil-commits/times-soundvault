@@ -51,12 +51,13 @@ scroll locking and focus management. Content padding steps from 16px to 24px to
 
 ## Brand treatment
 
-Until an approved logo is supplied, the `BrandLockup` renders real Mirchi and
-Times SoundVault text beside a neutral audio icon. The fallback is not an
-official trademark. The browser app icon uses the same provisional audio motif
-and is not a Mirchi trademark. An approved SVG or PNG at the documented path
-replaces the temporary lockup without changing shell consumers; images retain
-their aspect ratio and are never recoloured.
+The navigation shell uses the supplied Gaana/Mirchi partner lockup without
+recolouring, tracing or changing its aspect ratio. Desktop and sheet navigation
+give the horizontal mark room to breathe and pair it with a restrained
+Times SoundVault product label. The mobile top bar uses the compact mark while
+keeping the product name available to assistive technology. If the asset is
+removed, `BrandLockup` retains a neutral text-and-audio fallback. The browser
+app icon remains a provisional audio motif and is not a Mirchi trademark.
 
 ## Acceptable and unacceptable styling
 

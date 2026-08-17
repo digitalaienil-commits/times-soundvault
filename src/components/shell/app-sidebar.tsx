@@ -16,9 +16,11 @@ interface AppSidebarProps {
 export function AppSidebar({ brand, user }: AppSidebarProps) {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-sidebar-border bg-sidebar lg:flex lg:flex-col">
-      <div className="flex h-20 items-center px-4">{brand}</div>
+      <div className="flex h-28 items-center bg-brand-soft/35 px-5">
+        {brand}
+      </div>
       <Separator />
-      <div className="flex-1 px-4 py-6">
+      <div className="flex-1 px-4 py-7">
         <p className="mb-3 px-3 text-[0.6875rem] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
           Workspace
         </p>

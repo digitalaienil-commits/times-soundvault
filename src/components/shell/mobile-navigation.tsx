@@ -42,7 +42,7 @@ export function MobileNavigation({ brand, role }: MobileNavigationProps) {
         side="left"
         className="gap-0 border-sidebar-border bg-sidebar p-0 data-[side=left]:w-[min(20rem,88vw)]"
       >
-        <SheetHeader className="border-b border-border px-5 py-6 text-left">
+        <SheetHeader className="border-b border-border bg-brand-soft/35 px-5 py-6 text-left">
           <div className="pr-10">{brand}</div>
           <SheetTitle className="sr-only">Primary navigation</SheetTitle>
           <SheetDescription className="sr-only">

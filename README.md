@@ -88,10 +88,10 @@ from using cross-feature alias imports. See
 
 ## Brand asset
 
-No approved Mirchi logo is included yet, so the shell renders a clearly
-temporary text lockup. Supply `public/brand/mirchi-logo.svg` (preferred) or
-`public/brand/mirchi-logo.png`; the server-rendered `BrandLockup` will use the
-approved asset after the next build. See
+The shell uses the supplied Gaana/Mirchi partner lockup from
+`public/brand/mirchi-logo.svg`. The original vector colours and aspect ratio are
+preserved, with a compact treatment in the mobile top bar and a spacious
+stacked Times SoundVault treatment in desktop and sheet navigation. See
 [public/brand/README.md](public/brand/README.md).
 
 ## Current limitations

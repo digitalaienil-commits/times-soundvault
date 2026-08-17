@@ -35,18 +35,22 @@ export async function BrandLockup({
 
   return (
     <div
-      className={cn("flex min-w-0 items-center gap-2.5", className)}
+      className={cn(
+        "flex min-w-0",
+        compact ? "items-center" : "flex-col items-start gap-2.5",
+        className,
+      )}
       data-testid="brand-lockup"
     >
       {approvedLogo ? (
         <Image
           src={approvedLogo}
-          alt="Mirchi logo"
-          width={96}
-          height={36}
+          alt="Gaana, powered by Mirchi"
+          width={137}
+          height={28}
           className={cn(
-            "object-contain object-left",
-            compact ? "h-7 w-14" : "h-8 w-20",
+            "h-auto shrink-0 object-contain object-left",
+            compact ? "w-[7.5rem]" : "w-[10.75rem]",
           )}
           unoptimized
         />
@@ -55,20 +59,17 @@ export async function BrandLockup({
           <span className="flex size-8 items-center justify-center rounded-md bg-brand text-brand-foreground">
             <AudioLines aria-hidden="true" className="size-4" />
           </span>
-          <span className={cn(compact && "sr-only")}>
-            {productConfig.brandName}
-          </span>
+          <span>{productConfig.brandName}</span>
         </span>
       )}
-      <span aria-hidden="true" className="h-7 w-px shrink-0 bg-border" />
-      <span
-        className={cn(
-          "truncate font-semibold tracking-[-0.025em] text-foreground",
-          "text-sm",
-        )}
-      >
-        {productConfig.name}
-      </span>
+      {compact ? (
+        <span className="sr-only">{productConfig.name}</span>
+      ) : (
+        <span className="flex items-center gap-2.5 text-[0.6875rem] font-semibold tracking-[0.16em] text-foreground uppercase">
+          <span aria-hidden="true" className="h-px w-6 shrink-0 bg-brand" />
+          <span>{productConfig.name}</span>
+        </span>
+      )}
     </div>
   );
 }
