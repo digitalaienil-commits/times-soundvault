@@ -206,7 +206,9 @@ test("Admin sees every route and can manage pending access", async ({
   await expect(
     roleDialog.getByRole("heading", { name: "Confirm role change" }),
   ).toBeVisible();
-  await page.keyboard.press("Escape");
+  const cancelRole = roleDialog.getByRole("button", { name: "Cancel" });
+  await cancelRole.focus();
+  await page.keyboard.press("Enter");
   await expect(roleTrigger).toBeFocused();
   await page.keyboard.press("Enter");
   const confirmRole = page
