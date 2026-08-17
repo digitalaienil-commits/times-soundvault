@@ -2,10 +2,17 @@
 
 ## Product rules
 
-Times SoundVault is an internal Mirchi/Times audio workspace. `admin` users can
-eventually manage audio, people, and providers. `reviewer` users are ordinary
-internal users who can discover, preview, generate within limits, and download;
-they are not approval officers. There is no approval queue.
+Times SoundVault is an internal Mirchi/Times audio workspace. The final roles
+are `admin`, `music_producer`, `coordinator`, and `user`. Admin can do
+everything. Music Producer manages owned submissions. Coordinator reviews and
+approves. User only searches, listens, and downloads from the published
+Library. There is no Reviewer role.
+
+Navigation is not authorization. Every protected route and sensitive action
+checks permissions server-side. Roles are server-owned and may not be accepted
+from browser sign-in input. Local authentication never runs in production.
+External Producer authentication must not be invented; provider SDKs and
+secrets remain server-side and no secret may use a public environment variable.
 
 The Channels concept is prohibited. Do not add related navigation, filters,
 badges, models, mock data, counts, or copy.

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { CurrentUser } from "@/types/auth";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 
 interface UserMenuProps {
   user: CurrentUser;
@@ -62,8 +63,12 @@ export function UserMenu({ user }: UserMenuProps) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="flex items-center justify-between gap-3 p-3">
-          <span className="text-xs text-muted-foreground">Demo session</span>
+          <span className="text-xs text-muted-foreground">Active session</span>
           <RoleBadge role={user.role} />
+        </div>
+        <DropdownMenuSeparator />
+        <div className="p-1">
+          <SignOutButton compact />
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

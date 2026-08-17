@@ -1,34 +1,28 @@
 import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { FeaturePlaceholder } from "@/components/shared/feature-placeholder";
 import { PageHeader } from "@/components/shared/page-header";
-import { getCurrentUser } from "@/lib/auth/current-user";
-import { canAccessRoute } from "@/lib/auth/permissions";
+import { requireRouteAccess } from "@/lib/auth/current-user";
 
 export const metadata: Metadata = {
   title: "Admin",
 };
 
 export default async function AdminPage() {
-  const user = await getCurrentUser();
-
-  if (!canAccessRoute(user.role, "/admin")) {
-    redirect("/dashboard");
-  }
+  await requireRouteAccess("/admin");
 
   return (
     <>
       <PageHeader
         title="Admin"
-        description="Manage internal access, provider configuration and workspace controls."
+        description="Review the protected system area reserved for future workspace operations."
       />
       <FeaturePlaceholder
         title="Administration will remain intentional"
-        description="Access management and provider controls will be added only after real authentication and service boundaries exist."
+        description="Team access is available from the Team page. Provider management and protected system settings remain intentionally unavailable."
         icon={ShieldCheck}
-        section="Section 9"
+        section="Section 12"
       />
     </>
   );

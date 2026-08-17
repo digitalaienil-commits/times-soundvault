@@ -3,7 +3,14 @@ import type { LucideIcon } from "lucide-react";
 import type { UserRole } from "@/types/auth";
 
 export type WorkspaceRoute =
-  "/dashboard" | "/library" | "/generate" | "/upload" | "/admin";
+  | "/dashboard"
+  | "/library"
+  | "/my-uploads"
+  | "/upload"
+  | "/review"
+  | "/demands"
+  | "/team"
+  | "/admin";
 
 export interface NavigationItem {
   href: WorkspaceRoute;

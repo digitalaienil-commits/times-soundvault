@@ -24,8 +24,8 @@ The light-only V1 palette is defined once in `src/app/globals.css`:
 | `ring`                         | `#C9342D` | Keyboard focus                    |
 
 Destructive, success, and warning also have semantic tokens. Product components
-use token utilities, never repeated palette values. Mirchi red is provisional
-and can be updated in one token when official guidance arrives.
+use token utilities, never repeated palette values. Mirchi red provides focused
+emphasis while the supplied logo retains its original colours.
 
 ## Type, rhythm, and shape
 
@@ -48,6 +48,12 @@ The desktop shell begins at the `lg` breakpoint with a 256px fixed sidebar and
 sticky top bar. Below it, the sidebar becomes an accessible modal sheet with
 scroll locking and focus management. Content padding steps from 16px to 24px to
 40px. Touch controls target approximately 44px where practical.
+
+Authentication uses a standalone two-column frame that collapses into one
+logical reading order. Team management uses a semantic table on desktop and
+comfortable cards on mobile. Confirmation dialogs trap focus, close with
+Escape, and return focus to their trigger. Error and success messages use text
+and `aria-live`; colour is never their only signal.
 
 ## Brand treatment
 
