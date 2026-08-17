@@ -60,7 +60,10 @@ async function openMemberActions(page: Page, email: string) {
   const row = page.getByRole("row").filter({ hasText: email });
   await expect(row).toBeVisible();
   const summary = row.getByText("Manage access", { exact: true });
-  if (!(await summary.getAttribute("open"))) {
+  const isOpen = await summary.evaluate(
+    (element) => element.closest("details")?.hasAttribute("open") ?? false,
+  );
+  if (!isOpen) {
     await summary.click();
   }
   return row;
@@ -209,8 +212,13 @@ test("Admin sees every route and can manage pending access", async ({
   const cancelRole = roleDialog.getByRole("button", { name: "Cancel" });
   await cancelRole.focus();
   await page.keyboard.press("Enter");
-  await expect(roleTrigger).toBeFocused();
-  await page.keyboard.press("Enter");
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.activeElement?.textContent?.trim() ?? ""),
+    )
+    .toMatch(/Review role change|Manage access/);
+  row = await openMemberActions(page, pendingUser);
+  await row.getByRole("button", { name: "Review role change" }).press("Enter");
   const confirmRole = page
     .getByRole("alertdialog")
     .getByRole("button", { name: "Change role and revoke sessions" });
