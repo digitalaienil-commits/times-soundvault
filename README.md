@@ -1,107 +1,137 @@
 # Times SoundVault
 
-Times SoundVault is an internal AI-powered audio workspace for the Mirchi and
-Times team. It is being built to help internal users find, understand, create,
-and manage music and sound assets in one coherent product.
+Times SoundVault is the internal Mirchi/Times workspace for music intake,
+review, publication and discovery. Section 2 adds PostgreSQL-backed Better Auth,
+pre-authorised team access, four server-owned roles and a functional Admin Team
+workspace. Audio and submission records begin in Section 3; current workflow
+routes intentionally show honest placeholders instead of sample business data.
 
-## Section 1
+## Role model
 
-This repository currently contains the project foundation, semantic design
-system, responsive application shell, role-aware navigation, honest route
-placeholders, a dashboard preview, accessibility baseline, tests, and CI. It
-does not include real authentication, audio workflows, backend services,
-provider integrations, or fabricated business data.
+| Role           | Product responsibility                                                     |
+| -------------- | -------------------------------------------------------------------------- |
+| Admin          | Every workspace capability, including Team access and protected operations |
+| Music Producer | Own submissions, upload, published Library and Demand Sheet                |
+| Coordinator    | Upload, review, approve, resolve workflow exceptions and manage demand     |
+| User           | Search, listen to and download from the published Library only             |
+
+There is no Reviewer role. Navigation is filtered for clarity, but every
+protected route and sensitive mutation also checks permission on the server.
 
 ## Prerequisites
 
 - Node.js 24.18.1 (see `.nvmrc`)
 - pnpm 11.20.0
+- PostgreSQL 17 (local Compose is provided, or use an existing PostgreSQL 17
+  service and set `DATABASE_URL`)
 
-## Setup
+## Local setup
 
 ```bash
 nvm use
 corepack enable
-pnpm install
-cp .env.example .env.local
+pnpm install --frozen-lockfile
+pnpm db:up
+pnpm auth:setup-local
+pnpm auth:migrate
+pnpm auth:seed-local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The root route redirects
-to the dashboard.
+Open [http://localhost:3000](http://localhost:3000). `auth:setup-local` creates
+an ignored `.env.local` with generated local-only credentials and refuses to
+overwrite an existing file. It never prints passwords. Developers who do not
+use Docker can point `DATABASE_URL` at an existing PostgreSQL 17 database,
+create the `auth` schema, and start at `pnpm auth:migrate`.
 
-## Demo role
+Local authentication is email/password, has no Sign Up UI and is rejected when
+`NODE_ENV=production`. Google Workspace and Microsoft Entra configuration are
+documented in [docs/auth-provider-setup.md](docs/auth-provider-setup.md).
 
-Section 1 uses a server-only mock session. Set one of these values in
-`.env.local`, then restart the development server:
+## Authentication operations
 
 ```bash
-DEMO_ROLE=admin
-DEMO_ROLE=reviewer
+pnpm auth:generate
+pnpm auth:migrate
+pnpm auth:seed-local
+pnpm auth:bootstrap-admin -- --email admin@company.example
+pnpm auth:list-team
 ```
 
-The role is intentionally not public browser configuration. In local
-development only, an absent value defaults to Admin. Reviewer sessions do not
-receive Upload or Admin navigation and are redirected from direct visits to
-those routes. In production, a missing or invalid value falls back to the
-lower-privilege Reviewer role.
+Bootstrap creates or updates one pending Admin assignment. It does not create
+credentials or send email. On first valid provider sign-in, the exact approved
+email is bound to the provider identity in one transaction. `auth:list-team`
+prints safe assignment metadata only.
+
+## Routes
+
+| Route                  | Access                                           |
+| ---------------------- | ------------------------------------------------ |
+| `/sign-in`             | Public authentication entry                      |
+| `/auth/error`          | Public safe authentication error                 |
+| `/access-not-assigned` | Authenticated identity without active assignment |
+| `/access-denied`       | Active identity without route permission         |
+| `/library`             | All four roles                                   |
+| `/dashboard`           | Admin, Music Producer, Coordinator               |
+| `/my-uploads`          | Admin, Music Producer                            |
+| `/upload`              | Admin, Music Producer, Coordinator               |
+| `/review`              | Admin, Coordinator                               |
+| `/demands`             | Admin, Music Producer, Coordinator               |
+| `/team`                | Admin                                            |
+| `/admin`               | Admin                                            |
+
+`/` sends User directly to Library and the three operational roles to
+Dashboard. Generate is intentionally absent from the primary workspace.
 
 ## Commands
 
 ```bash
-pnpm dev          # development server
-pnpm format       # write formatting
-pnpm format:check # verify formatting
-pnpm lint         # ESLint and layer restrictions
-pnpm typecheck    # strict TypeScript check
-pnpm test         # Vitest unit suite
-pnpm test:watch   # Vitest watch mode
-pnpm test:e2e     # Playwright Chromium suite
-pnpm check        # non-browser quality gates
-pnpm build        # production build
-pnpm start        # serve a production build
+pnpm db:up           # start the pinned PostgreSQL 17 Compose service
+pnpm db:down         # stop the service without deleting its volume
+pnpm db:logs         # follow PostgreSQL logs
+pnpm db:reset        # guarded local-only reset; requires confirmation
+pnpm dev
+pnpm format
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:e2e
+pnpm check
+pnpm build
+pnpm start
 ```
 
-Install the Playwright browser once on a new machine with
-`pnpm exec playwright install chromium`.
+GitHub Actions creates an ephemeral PostgreSQL 17 service, migrates an empty
+database, runs the PostgreSQL integration suite, seeds the four local roles and
+runs the Chromium role/accessibility suite.
 
-## Routes
+## Architecture and security
 
-| Route        | Access          | Current purpose                    |
-| ------------ | --------------- | ---------------------------------- |
-| `/`          | Everyone        | Redirects to `/dashboard`          |
-| `/dashboard` | Admin, Reviewer | Foundation dashboard preview       |
-| `/library`   | Admin, Reviewer | Future discovery placeholder       |
-| `/generate`  | Admin, Reviewer | Future generation placeholder      |
-| `/upload`    | Admin           | Guarded upload placeholder         |
-| `/admin`     | Admin           | Guarded administration placeholder |
-
-## Architecture
-
-Routes in `src/app` compose feature modules. Product features live in
-`src/features`; product-wide components are separated into `brand`, `shell`,
-and `shared`; reusable shadcn primitives live in `components/ui`; and stable
-permission and mock-session interfaces live in `src/lib`. ESLint mechanically
-prevents shared layers from importing feature modules and prevents features
-from using cross-feature alias imports. See
-[docs/architecture.md](docs/architecture.md) for the full ownership model.
+Better Auth 1.6.29 owns users, credential/provider accounts and database
+sessions. SoundVault owns `auth.team_access` and `auth.access_audit_event`.
+Provider tokens remain encrypted server-side and never enter the CurrentUser
+DTO. Role changes and suspensions are transactional, audited and revoke every
+session for the target identity. The final active Admin cannot be demoted or
+suspended. See [docs/authentication.md](docs/authentication.md),
+[docs/access-control.md](docs/access-control.md) and
+[docs/team-access.md](docs/team-access.md).
 
 ## Brand asset
 
-No approved Mirchi logo is included yet, so the shell renders a clearly
-temporary text lockup. Supply `public/brand/mirchi-logo.svg` (preferred) or
-`public/brand/mirchi-logo.png`; the server-rendered `BrandLockup` will use the
-approved asset after the next build. See
-[public/brand/README.md](public/brand/README.md).
+The shell and authentication screens use the supplied Gaana/Mirchi lockup from
+`public/brand/mirchi-logo.svg` without recolouring or changing its proportions.
+See [public/brand/README.md](public/brand/README.md).
 
 ## Current limitations
 
-- Authentication is a server environment mock, not identity verification.
-- Route guards are the Section 1 role foundation, not a complete security model.
-- Dashboard content explains future capabilities and contains no live metrics.
-- Audio, upload, generation, search, storage, and provider behavior are not
-  implemented.
-- Automated accessibility tests complement, but do not replace, manual review.
+- Google and Microsoft modes require real organization credentials and have not
+  been live-tested by the repository test suite.
+- Audio, catalog, upload processing, analysis, review records, publication,
+  playback and downloads are planned work; no fake records are shown.
+- Team access sends no invitation email.
+- Automated accessibility coverage complements manual keyboard, zoom and
+  assistive-technology review.
 
-The next planned milestone is **Section 2: Authentication & Access Control**.
-The complete sequence is recorded in [docs/build-roadmap.md](docs/build-roadmap.md).
+The next milestone is **Section 3: Audio, Catalog & Submission Domain**. The
+complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).

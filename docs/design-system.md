@@ -24,8 +24,8 @@ The light-only V1 palette is defined once in `src/app/globals.css`:
 | `ring`                         | `#C9342D` | Keyboard focus                    |
 
 Destructive, success, and warning also have semantic tokens. Product components
-use token utilities, never repeated palette values. Mirchi red is provisional
-and can be updated in one token when official guidance arrives.
+use token utilities, never repeated palette values. Mirchi red provides focused
+emphasis while the supplied logo retains its original colours.
 
 ## Type, rhythm, and shape
 
@@ -49,14 +49,21 @@ sticky top bar. Below it, the sidebar becomes an accessible modal sheet with
 scroll locking and focus management. Content padding steps from 16px to 24px to
 40px. Touch controls target approximately 44px where practical.
 
+Authentication uses a standalone two-column frame that collapses into one
+logical reading order. Team management uses a semantic table on desktop and
+comfortable cards on mobile. Confirmation dialogs trap focus, close with
+Escape, and return focus to their trigger. Error and success messages use text
+and `aria-live`; colour is never their only signal.
+
 ## Brand treatment
 
-Until an approved logo is supplied, the `BrandLockup` renders real Mirchi and
-Times SoundVault text beside a neutral audio icon. The fallback is not an
-official trademark. The browser app icon uses the same provisional audio motif
-and is not a Mirchi trademark. An approved SVG or PNG at the documented path
-replaces the temporary lockup without changing shell consumers; images retain
-their aspect ratio and are never recoloured.
+The navigation shell uses the supplied Gaana/Mirchi partner lockup without
+recolouring, tracing or changing its aspect ratio. Desktop and sheet navigation
+give the horizontal mark room to breathe and pair it with a restrained
+Times SoundVault product label. The mobile top bar uses the compact mark while
+keeping the product name available to assistive technology. If the asset is
+removed, `BrandLockup` retains a neutral text-and-audio fallback. The browser
+app icon remains a provisional audio motif and is not a Mirchi trademark.
 
 ## Acceptable and unacceptable styling
 

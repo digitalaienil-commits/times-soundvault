@@ -12,6 +12,30 @@ jobs:
   quality:
     name: Quality gates
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: soundvault
+          POSTGRES_USER: soundvault
+          POSTGRES_PASSWORD: soundvault_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U soundvault -d soundvault"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      AUTH_PROVIDER: google
+      BETTER_AUTH_SECRET: ci-only-secret-with-more-than-32-characters
+      BETTER_AUTH_URL: https://soundvault.test
+      AUTH_TRUSTED_ORIGINS: https://soundvault.test
+      DATABASE_URL: postgresql://soundvault:soundvault_ci_password@127.0.0.1:5432/soundvault
+      TEST_DATABASE_URL: postgresql://soundvault:soundvault_ci_password@127.0.0.1:5432/soundvault
+      GOOGLE_CLIENT_ID: ci-google-client
+      GOOGLE_CLIENT_SECRET: ci-google-secret
+      GOOGLE_WORKSPACE_DOMAIN: soundvault.test
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -29,6 +53,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Prepare empty authentication database
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
+          pnpm auth:migrate
 
       - name: Check formatting
         run: pnpm format:check
@@ -48,6 +77,39 @@ jobs:
   browser:
     name: Chromium smoke and accessibility
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: soundvault
+          POSTGRES_USER: soundvault
+          POSTGRES_PASSWORD: soundvault_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U soundvault -d soundvault"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      AUTH_PROVIDER: local
+      BETTER_AUTH_SECRET: ci-only-secret-with-more-than-32-characters
+      BETTER_AUTH_URL: http://localhost:3000
+      AUTH_TRUSTED_ORIGINS: http://127.0.0.1:3000,http://localhost:3000
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+      DATABASE_URL: postgresql://soundvault:soundvault_ci_password@127.0.0.1:5432/soundvault
+      LOCAL_ADMIN_NAME: Admin User
+      LOCAL_ADMIN_EMAIL: admin@soundvault.test
+      LOCAL_ADMIN_PASSWORD: local-admin-password-ci
+      LOCAL_PRODUCER_NAME: Music Producer
+      LOCAL_PRODUCER_EMAIL: producer@soundvault.test
+      LOCAL_PRODUCER_PASSWORD: local-producer-password-ci
+      LOCAL_COORDINATOR_NAME: Coordinator User
+      LOCAL_COORDINATOR_EMAIL: coordinator@soundvault.test
+      LOCAL_COORDINATOR_PASSWORD: local-coordinator-password-ci
+      LOCAL_USER_NAME: Library User
+      LOCAL_USER_EMAIL: user@soundvault.test
+      LOCAL_USER_PASSWORD: local-user-password-ci
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -65,6 +127,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Prepare and seed authentication database
+        run: |
+          docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
+          pnpm auth:migrate
+          pnpm auth:seed-local
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium

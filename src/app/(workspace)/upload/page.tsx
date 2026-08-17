@@ -1,34 +1,28 @@
 import { UploadCloud } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 
 import { FeaturePlaceholder } from "@/components/shared/feature-placeholder";
 import { PageHeader } from "@/components/shared/page-header";
-import { getCurrentUser } from "@/lib/auth/current-user";
-import { canAccessRoute } from "@/lib/auth/permissions";
+import { requireRouteAccess } from "@/lib/auth/current-user";
 
 export const metadata: Metadata = {
   title: "Upload",
 };
 
 export default async function UploadPage() {
-  const user = await getCurrentUser();
-
-  if (!canAccessRoute(user.role, "/upload")) {
-    redirect("/dashboard");
-  }
+  await requireRouteAccess("/upload");
 
   return (
     <>
       <PageHeader
         title="Upload"
-        description="Add audio files for automatic analysis and library indexing."
+        description="Prepare tracks and stems for the future submission workflow."
       />
       <FeaturePlaceholder
         title="The upload workflow comes later"
-        description="Secure file handling, analysis states and indexing will be designed together with the audio data model."
+        description="Secure file handling starts after the audio, catalog and submission records are defined. This screen does not upload anything yet."
         icon={UploadCloud}
-        section="Section 7"
+        section="Section 4"
       />
     </>
   );

@@ -1,15 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnvConfig } from "@next/env";
+
+loadEnvConfig(process.cwd());
+
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 2 : 0,
+  retries: 0,
   workers: process.env.CI ? 1 : undefined,
+  expect: { timeout: 10_000 },
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: "http://127.0.0.1:3000",
-    trace: "on-first-retry",
+    baseURL,
+    trace: process.env.CI ? "retain-on-failure" : "on-first-retry",
     screenshot: "only-on-failure",
   },
   projects: [
@@ -19,8 +25,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev --hostname 127.0.0.1",
-    url: "http://127.0.0.1:3000/dashboard",
+    command: "pnpm dev --hostname localhost",
+    url: `${baseURL}/sign-in`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },

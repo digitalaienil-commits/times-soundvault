@@ -27,7 +27,7 @@ export function SidebarNavigation({
           const Icon = item.icon;
 
           return (
-            <li key={item.href}>
+            <li key={`${item.href}:${item.label}`}>
               <Link
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}

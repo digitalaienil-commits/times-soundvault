@@ -1,49 +1,86 @@
 import { describe, expect, it } from "vitest";
 
-import { canAccessRoute, getNavigationForRole } from "@/lib/auth/permissions";
+import { getNavigationForRole } from "@/lib/auth/permissions";
+import {
+  getPermissionsForRole,
+  hasAllPermissions,
+  hasPermission,
+  PERMISSIONS,
+} from "@/lib/auth/permissions";
+import { USER_ROLES } from "@/types/auth";
 
-describe("role navigation", () => {
-  it("includes every current destination for an Admin", () => {
-    expect(getNavigationForRole("admin").map((item) => item.label)).toEqual([
-      "Dashboard",
-      "Library",
-      "Generate",
-      "Upload",
-      "Admin",
+describe("four-role permissions", () => {
+  it("defines exactly the final four roles and rejects the historical role", () => {
+    expect(USER_ROLES).toEqual([
+      "admin",
+      "music_producer",
+      "coordinator",
+      "user",
     ]);
+    expect(getPermissionsForRole("reviewer")).toEqual([]);
+    expect(getPermissionsForRole("owner")).toEqual([]);
   });
 
-  it("includes the Reviewer destinations", () => {
-    expect(getNavigationForRole("reviewer").map((item) => item.label)).toEqual([
-      "Dashboard",
-      "Library",
-      "Generate",
-    ]);
+  it("gives Admin every canonical permission", () => {
+    expect(getPermissionsForRole("admin")).toEqual(PERMISSIONS);
+    expect(hasAllPermissions("admin", PERMISSIONS)).toBe(true);
   });
 
-  it("excludes privileged destinations for a Reviewer", () => {
-    const labels = getNavigationForRole("reviewer").map((item) => item.label);
+  it("keeps User limited to published-library capabilities", () => {
+    expect(getPermissionsForRole("user")).toEqual([
+      "workspace.access",
+      "library.read",
+      "audio.listen",
+      "audio.download",
+    ]);
+    expect(hasPermission("user", "submission.create")).toBe(false);
+  });
 
-    expect(labels).not.toContain("Upload");
-    expect(labels).not.toContain("Admin");
+  it("gives Music Producer own-submission access without approval", () => {
+    expect(hasPermission("music_producer", "submission.readOwn")).toBe(true);
+    expect(hasPermission("music_producer", "submission.updateOwn")).toBe(true);
+    expect(hasPermission("music_producer", "submission.approve")).toBe(false);
+  });
+
+  it("gives Coordinator review, approval and demand access without team management", () => {
+    expect(hasPermission("coordinator", "submission.review")).toBe(true);
+    expect(hasPermission("coordinator", "submission.approve")).toBe(true);
+    expect(hasPermission("coordinator", "demand.manage")).toBe(true);
+    expect(hasPermission("coordinator", "team.manage")).toBe(false);
   });
 });
 
-describe("route permissions", () => {
-  it.each(["/upload", "/admin"] as const)(
-    "denies Reviewer access to %s",
-    (route) => {
-      expect(canAccessRoute("reviewer", route)).toBe(false);
-    },
-  );
-
+describe("role-aware navigation", () => {
   it.each([
-    "/dashboard",
-    "/library",
-    "/generate",
-    "/upload",
-    "/admin",
-  ] as const)("permits Admin access to %s", (route) => {
-    expect(canAccessRoute("admin", route)).toBe(true);
+    [
+      "admin",
+      [
+        "Dashboard",
+        "Library",
+        "Submissions",
+        "Review Queue",
+        "Upload",
+        "Demand Sheet",
+        "Team",
+        "Admin",
+      ],
+    ],
+    [
+      "music_producer",
+      ["Dashboard", "Library", "My Uploads", "Upload", "Demand Sheet"],
+    ],
+    [
+      "coordinator",
+      ["Dashboard", "Library", "Review Queue", "Upload", "Demand Sheet"],
+    ],
+    ["user", ["Library"]],
+  ] as const)("shows the intended %s navigation", (role, labels) => {
+    expect(getNavigationForRole(role).map((item) => item.label)).toEqual(
+      labels,
+    );
+  });
+
+  it("does not expose navigation for malformed roles", () => {
+    expect(getNavigationForRole("administrator")).toEqual([]);
   });
 });
