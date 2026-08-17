@@ -1,5 +1,11 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
+import { Pool } from "pg";
+
+const databaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+const testDatabase = databaseUrl
+  ? new Pool({ connectionString: databaseUrl, max: 1 })
+  : null;
 
 const identities = {
   admin: {
@@ -140,6 +146,17 @@ async function createAuthenticatedPages(browser: Browser) {
 
 test.describe.configure({ mode: "serial" });
 test.setTimeout(60_000);
+
+test.beforeEach(async () => {
+  if (!testDatabase) {
+    throw new Error("DATABASE_URL is required for authentication E2E tests");
+  }
+  await testDatabase.query(`DELETE FROM auth."rateLimit"`);
+});
+
+test.afterAll(async () => {
+  await testDatabase?.end();
+});
 
 test("unauthenticated routes preserve safe callbacks and Sign In is accessible", async ({
   page,
