@@ -1,6 +1,6 @@
 # Times SoundVault
 
-Times SoundVault is the internal Mirchi/Times workspace for music intake,
+Times SoundVault is The Times Group's internal workspace for music intake,
 review, publication and discovery. Section 2 adds PostgreSQL-backed Better Auth,
 pre-authorised team access, four server-owned roles and a functional Admin Team
 workspace. Audio and submission records begin in Section 3; current workflow
@@ -123,9 +123,9 @@ suspended. See [docs/authentication.md](docs/authentication.md),
 
 ## Brand asset
 
-The shell and authentication screens use the supplied Gaana/Mirchi lockup from
-`public/brand/mirchi-logo.svg` without recolouring or changing its proportions.
-See [public/brand/README.md](public/brand/README.md).
+The shell and authentication screens use the supplied Times Group logo from
+`public/brand/times-group-logo.png` without recolouring or changing its
+proportions. See [public/brand/README.md](public/brand/README.md).
 
 ## Current limitations
 

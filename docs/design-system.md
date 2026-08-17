@@ -24,7 +24,7 @@ The light-only V1 palette is defined once in `src/app/globals.css`:
 | `ring`                         | `#C9342D` | Keyboard focus                    |
 
 Destructive, success, and warning also have semantic tokens. Product components
-use token utilities, never repeated palette values. Mirchi red provides focused
+use token utilities, never repeated palette values. Brand red provides focused
 emphasis while the supplied logo retains its original colours.
 
 ## Type, rhythm, and shape
@@ -57,13 +57,13 @@ and `aria-live`; colour is never their only signal.
 
 ## Brand treatment
 
-The navigation shell uses the supplied Gaana/Mirchi partner lockup without
-recolouring, tracing or changing its aspect ratio. Desktop and sheet navigation
-give the horizontal mark room to breathe and pair it with a restrained
-Times SoundVault product label. The mobile top bar uses the compact mark while
-keeping the product name available to assistive technology. If the asset is
-removed, `BrandLockup` retains a neutral text-and-audio fallback. The browser
-app icon remains a provisional audio motif and is not a Mirchi trademark.
+The navigation shell uses the supplied Times Group logo without recolouring,
+tracing or changing its aspect ratio. Desktop and sheet navigation give the
+mark room to breathe and pair it with a restrained Times SoundVault product
+label. The mobile top bar uses the compact mark while keeping the product name
+available to assistive technology. If the asset is removed, `BrandLockup`
+retains a neutral text-and-audio fallback. The browser app icon remains a
+provisional audio motif and is not part of the supplied Times Group logo.
 
 ## Acceptable and unacceptable styling
 

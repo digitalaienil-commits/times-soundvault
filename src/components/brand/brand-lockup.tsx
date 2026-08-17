@@ -13,7 +13,7 @@ interface BrandLockupProps {
 }
 
 async function findApprovedLogo(): Promise<string | null> {
-  const assets = ["mirchi-logo.svg", "mirchi-logo.png"];
+  const assets = ["times-group-logo.png"];
 
   for (const asset of assets) {
     try {
@@ -45,12 +45,12 @@ export async function BrandLockup({
       {approvedLogo ? (
         <Image
           src={approvedLogo}
-          alt="Gaana, powered by Mirchi"
-          width={137}
-          height={28}
+          alt="The Times Group"
+          width={349}
+          height={238}
           className={cn(
             "h-auto shrink-0 object-contain object-left",
-            compact ? "w-[7.5rem]" : "w-[10.75rem]",
+            compact ? "w-[3.75rem]" : "w-28",
           )}
           unoptimized
         />

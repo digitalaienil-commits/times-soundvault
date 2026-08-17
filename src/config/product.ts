@@ -1,7 +1,6 @@
 export const productConfig = {
   name: "Times SoundVault",
-  brandName: "Mirchi",
-  description:
-    "An intelligent internal audio workspace for the Mirchi and Times team.",
+  brandName: "The Times Group",
+  description: "An intelligent internal audio workspace for The Times Group.",
   environmentLabel: "Internal workspace",
 } as const;

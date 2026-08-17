@@ -8,7 +8,7 @@ describe("BrandLockup", () => {
     render(await BrandLockup({}));
 
     expect(
-      screen.getByRole("img", { name: "Gaana, powered by Mirchi" }),
+      screen.getByRole("img", { name: "The Times Group" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Times SoundVault")).toBeInTheDocument();
   });
