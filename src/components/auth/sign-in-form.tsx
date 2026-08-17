@@ -3,7 +3,6 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { Building2, KeyRound } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,6 @@ interface SignInFormProps {
 export function SignInForm({ provider, callbackUrl }: SignInFormProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   async function signInWithProvider() {
     if (provider === "local") return;
@@ -56,7 +54,7 @@ export function SignInForm({ provider, callbackUrl }: SignInFormProps) {
       setPending(false);
       return;
     }
-    router.replace(callbackUrl);
+    window.location.replace(callbackUrl);
   }
 
   if (provider !== "local") {
