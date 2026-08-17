@@ -9,15 +9,17 @@ const SESSION_COOKIE_NAMES = [
 ];
 
 export function proxy(request: NextRequest) {
+  const requestedPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  const callbackUrl = sanitizeCallbackUrl(requestedPath, "/dashboard");
   const hasLikelySession = SESSION_COOKIE_NAMES.some((name) =>
     request.cookies.has(name),
   );
   if (hasLikelySession) {
-    return NextResponse.next();
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-soundvault-callback", callbackUrl);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  const requestedPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-  const callbackUrl = sanitizeCallbackUrl(requestedPath, "/dashboard");
   const signInUrl = new URL("/sign-in", request.url);
   signInUrl.searchParams.set("callbackUrl", callbackUrl);
   return NextResponse.redirect(signInUrl);
