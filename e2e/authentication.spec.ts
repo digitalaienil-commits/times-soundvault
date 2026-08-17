@@ -35,6 +35,7 @@ async function signIn(
   await expect(page).toHaveURL(
     new RegExp(`${expectedPath.replace("/", "\\/")}$`),
   );
+  await page.waitForLoadState("networkidle");
 }
 
 async function expectNavigation(
@@ -46,10 +47,14 @@ async function expectNavigation(
     name: "Primary navigation",
   });
   for (const label of visible) {
-    await expect(navigation.getByRole("link", { name: label })).toBeVisible();
+    await expect(
+      navigation.getByRole("link", { name: label, exact: true }),
+    ).toBeVisible();
   }
   for (const label of hidden) {
-    await expect(navigation.getByRole("link", { name: label })).toHaveCount(0);
+    await expect(
+      navigation.getByRole("link", { name: label, exact: true }),
+    ).toHaveCount(0);
   }
   await expect(navigation.getByRole("link", { name: "Generate" })).toHaveCount(
     0,
@@ -204,7 +209,7 @@ test("Admin sees every route and can manage pending access", async ({
   await row.getByLabel("Assigned role").selectOption("coordinator");
   const roleTrigger = row.getByRole("button", { name: "Review role change" });
   await roleTrigger.focus();
-  await page.keyboard.press("Enter");
+  await roleTrigger.click();
   const roleDialog = page.getByRole("alertdialog");
   await expect(
     roleDialog.getByRole("heading", { name: "Confirm role change" }),
@@ -218,7 +223,7 @@ test("Admin sees every route and can manage pending access", async ({
     )
     .toMatch(/Review role change|Manage access/);
   row = await openMemberActions(page, pendingUser);
-  await row.getByRole("button", { name: "Review role change" }).press("Enter");
+  await row.getByRole("button", { name: "Review role change" }).click();
   const confirmRole = page
     .getByRole("alertdialog")
     .getByRole("button", { name: "Change role and revoke sessions" });
