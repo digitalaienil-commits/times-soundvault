@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth/auth";
 import { sanitizeCallbackUrl } from "@/lib/auth/callback-url";
 import { getAuthEnvironment } from "@/lib/auth/environment";
+import type { LocalIdentityConfig } from "@/lib/auth/environment-schema";
 import { canUseLocalDirectSignIn } from "@/lib/auth/local-direct-sign-in";
+import { getDefaultRouteForRole } from "@/lib/auth/route-policy";
+import { isUserRole, type UserRole } from "@/types/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,19 @@ function signInUrl(baseUrl: string, callbackUrl: string): URL {
   url.searchParams.set("callbackUrl", callbackUrl);
   url.searchParams.set("localError", "1");
   return url;
+}
+
+function getLocalIdentity(
+  local: NonNullable<ReturnType<typeof getAuthEnvironment>["local"]>,
+  role: UserRole,
+): LocalIdentityConfig {
+  const identities = {
+    admin: local.admin,
+    music_producer: local.musicProducer,
+    coordinator: local.coordinator,
+    user: local.user,
+  } satisfies Record<UserRole, LocalIdentityConfig>;
+  return identities[role];
 }
 
 export async function POST(request: Request) {
@@ -34,14 +50,19 @@ export async function POST(request: Request) {
   }
 
   const form = await request.formData();
+  const requestedRole = form.get("role");
+  if (!isUserRole(requestedRole)) {
+    return new Response("Invalid local access role", { status: 400 });
+  }
+  const identity = getLocalIdentity(local, requestedRole);
   const callbackUrl = sanitizeCallbackUrl(
     String(form.get("callbackUrl") ?? ""),
-    "/dashboard",
+    getDefaultRouteForRole(requestedRole),
   );
   const authResponse = await auth.api.signInEmail({
     body: {
-      email: local.admin.email,
-      password: local.admin.password,
+      email: identity.email,
+      password: identity.password,
       callbackURL: callbackUrl,
     },
     headers: request.headers,

@@ -44,11 +44,12 @@ overwrite an existing file. It never prints passwords. Developers who do not
 use Docker can point `DATABASE_URL` at an existing PostgreSQL 17 database,
 create the `auth` schema, and start at `pnpm auth:migrate`.
 
-Local authentication enters the seeded Local Admin directly from one button.
-The configured credential stays server-side, there is no Sign Up UI, and the
-shortcut is rejected when `NODE_ENV=production`, the provider is not `local`,
-or the request origin is not the exact configured localhost origin. Google
-Workspace and Microsoft Entra configuration are documented in
+Local authentication exposes four direct role choices for the seeded Admin,
+Music Producer, Coordinator and User identities. Every configured credential
+stays server-side, there is no Sign Up UI, and the selector is rejected when
+`NODE_ENV=production`, the provider is not `local`, or the request origin is not
+the exact configured localhost origin. Google Workspace and Microsoft Entra
+configuration are documented in
 [docs/auth-provider-setup.md](docs/auth-provider-setup.md).
 
 ## Authentication operations

@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, KeyRound } from "lucide-react";
+import {
+  Building2,
+  ClipboardList,
+  Headphones,
+  KeyRound,
+  Music2,
+  ShieldCheck,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/auth-client";
@@ -12,6 +19,33 @@ interface SignInFormProps {
   callbackUrl: string;
   localError?: boolean;
 }
+
+const LOCAL_ACCESS_OPTIONS = [
+  {
+    role: "admin",
+    label: "Admin",
+    description: "Full workspace and team access",
+    icon: ShieldCheck,
+  },
+  {
+    role: "music_producer",
+    label: "Music Producer",
+    description: "Uploads, submissions and demands",
+    icon: Music2,
+  },
+  {
+    role: "coordinator",
+    label: "Coordinator",
+    description: "Quality control, uploads and demands",
+    icon: ClipboardList,
+  },
+  {
+    role: "user",
+    label: "User",
+    description: "Library discovery and downloads",
+    icon: Headphones,
+  },
+] as const;
 
 export function SignInForm({
   provider,
@@ -78,8 +112,8 @@ export function SignInForm({
           Local development authentication
         </span>
         <p className="mt-1 pl-6 text-xs leading-5 text-muted-foreground">
-          Enter as the seeded Local Admin. No password entry is required, and
-          this mode is disabled in production.
+          Choose a seeded role to inspect its exact access. Credentials stay
+          server-side, and this mode is disabled in production.
         </p>
       </div>
       {localError ? (
@@ -88,9 +122,39 @@ export function SignInForm({
           and the local identities are seeded.
         </p>
       ) : null}
-      <Button type="submit" size="lg" className="h-12 w-full">
-        Enter SoundVault
-      </Button>
+      <div
+        className="grid gap-3 sm:grid-cols-2"
+        role="group"
+        aria-label="Local access roles"
+      >
+        {LOCAL_ACCESS_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          return (
+            <Button
+              key={option.role}
+              type="submit"
+              name="role"
+              value={option.role}
+              variant="outline"
+              aria-label={`Enter as ${option.label}`}
+              className="group h-auto min-h-20 w-full justify-start gap-3 rounded-xl px-4 py-3 text-left whitespace-normal hover:border-primary/40 hover:bg-accent"
+            >
+              <Icon
+                aria-hidden="true"
+                className="size-5 shrink-0 text-primary"
+              />
+              <span className="flex min-w-0 flex-col items-start gap-1">
+                <span className="font-semibold text-foreground">
+                  {option.label}
+                </span>
+                <span className="text-xs leading-4 font-normal text-muted-foreground">
+                  {option.description}
+                </span>
+              </span>
+            </Button>
+          );
+        })}
+      </div>
     </form>
   );
 }
