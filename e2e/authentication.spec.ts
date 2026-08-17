@@ -208,7 +208,6 @@ test("Admin sees every route and can manage pending access", async ({
   let row = await openMemberActions(page, pendingUser);
   await row.getByLabel("Assigned role").selectOption("coordinator");
   const roleTrigger = row.getByRole("button", { name: "Review role change" });
-  await roleTrigger.focus();
   await roleTrigger.click();
   const roleDialog = page.getByRole("alertdialog");
   await expect(

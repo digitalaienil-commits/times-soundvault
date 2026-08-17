@@ -15,7 +15,6 @@ export function SignOutButton({ compact = false }: { compact?: boolean }) {
     setPending(true);
     await authClient.signOut();
     router.replace("/sign-in");
-    router.refresh();
   }
 
   return (

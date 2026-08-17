@@ -57,7 +57,6 @@ export function SignInForm({ provider, callbackUrl }: SignInFormProps) {
       return;
     }
     router.replace(callbackUrl);
-    router.refresh();
   }
 
   if (provider !== "local") {

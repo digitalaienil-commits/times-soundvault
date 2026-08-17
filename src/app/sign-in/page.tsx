@@ -26,7 +26,7 @@ export default async function SignInPage({
       ),
     );
   }
-  const callbackUrl = sanitizeCallbackUrl(requestedCallback, "/dashboard");
+  const callbackUrl = sanitizeCallbackUrl(requestedCallback, "/");
   const provider = getAuthEnvironment().provider;
 
   return (

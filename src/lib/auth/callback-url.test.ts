@@ -4,6 +4,7 @@ import { sanitizeCallbackUrl } from "./callback-url";
 
 describe("safe callback URLs", () => {
   it.each([
+    "/",
     "/dashboard",
     "/library?query=calm&page=2",
     "/my-uploads",

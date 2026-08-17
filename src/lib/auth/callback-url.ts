@@ -22,9 +22,10 @@ export function sanitizeCallbackUrl(
     if (
       parsed.origin !== "https://soundvault.invalid" ||
       parsed.hash ||
-      !PROTECTED_ROUTES.includes(
-        parsed.pathname as (typeof PROTECTED_ROUTES)[number],
-      )
+      (parsed.pathname !== "/" &&
+        !PROTECTED_ROUTES.includes(
+          parsed.pathname as (typeof PROTECTED_ROUTES)[number],
+        ))
     ) {
       return fallback;
     }
