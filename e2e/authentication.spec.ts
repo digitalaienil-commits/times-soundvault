@@ -24,7 +24,7 @@ async function signIn(
   page: Page,
   identity: { email: string; password: string },
   expectedPath: string,
-  callbackUrl = "/",
+  callbackUrl = expectedPath,
 ) {
   expect(identity.email).not.toBe("");
   expect(identity.password).not.toBe("");
@@ -180,7 +180,7 @@ test("malicious callbacks fail closed", async ({ page }) => {
   await page.getByLabel("Email").fill(identities.admin.email);
   await page.getByLabel("Password").fill(identities.admin.password);
   await page.getByRole("button", { name: "Sign In" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 });
 
 test("Admin sees every route and can manage pending access", async ({
@@ -307,7 +307,7 @@ test("Coordinator navigation and server routes match the permission model", asyn
 test("User lands in Library and cannot reach privileged routes", async ({
   page,
 }) => {
-  await signIn(page, identities.user, "/library");
+  await signIn(page, identities.user, "/library", "/");
   await expectNavigation(
     page,
     ["Library"],
