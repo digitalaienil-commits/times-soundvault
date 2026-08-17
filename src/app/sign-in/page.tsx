@@ -17,6 +17,7 @@ export default async function SignInPage({
   const requestedCallback = Array.isArray(query.callbackUrl)
     ? query.callbackUrl[0]
     : query.callbackUrl;
+  const localError = query.localError === "1";
   const state = await getAuthState();
   if (state.kind === "authenticated") {
     redirect(
@@ -57,7 +58,11 @@ export default async function SignInPage({
           Authentication does not grant access unless an Admin has assigned your
           account to the team.
         </p>
-        <SignInForm provider={provider} callbackUrl={callbackUrl} />
+        <SignInForm
+          provider={provider}
+          callbackUrl={callbackUrl}
+          localError={localError}
+        />
       </section>
     </AuthFrame>
   );

@@ -35,9 +35,19 @@ async function signIn(
   expect(identity.email).not.toBe("");
   expect(identity.password).not.toBe("");
   await page.goto(`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`);
-  await page.getByLabel("Email").fill(identity.email);
-  await page.getByLabel("Password").fill(identity.password);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  const response = await page.evaluate(
+    async ({ email, password, callbackURL }) => {
+      const result = await fetch("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, password, callbackURL }),
+      });
+      return { ok: result.ok, status: result.status };
+    },
+    { ...identity, callbackURL: callbackUrl },
+  );
+  expect(response.ok, `Sign-in returned HTTP ${response.status}`).toBe(true);
+  await page.goto(callbackUrl);
   await expect(page).toHaveURL(
     new RegExp(`${expectedPath.replace("/", "\\/")}$`),
   );
@@ -173,13 +183,9 @@ test("unauthenticated routes preserve safe callbacks and Sign In is accessible",
   ).toHaveCount(0);
   await expect(page.getByText(/choose.*role/i)).toHaveCount(0);
 
-  const email = page.getByLabel("Email");
-  await email.focus();
-  await expect(email).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByLabel("Password")).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("button", { name: "Sign In" })).toBeFocused();
+  const enterButton = page.getByRole("button", { name: "Enter SoundVault" });
+  await enterButton.focus();
+  await expect(enterButton).toBeFocused();
 
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -194,9 +200,7 @@ test("unauthenticated routes preserve safe callbacks and Sign In is accessible",
 
 test("malicious callbacks fail closed", async ({ page }) => {
   await page.goto("/sign-in?callbackUrl=https://evil.example");
-  await page.getByLabel("Email").fill(identities.admin.email);
-  await page.getByLabel("Password").fill(identities.admin.password);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await page.getByRole("button", { name: "Enter SoundVault" }).click();
   await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 });
 
