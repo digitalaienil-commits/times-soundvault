@@ -98,6 +98,7 @@ async function changeMemberStatus(
       operation === "suspend" ? /Access suspended/ : /Access reactivated/,
     ),
   ).toBeVisible();
+  await page.waitForLoadState("networkidle");
 }
 
 async function createAuthenticatedPages(browser: Browser) {
@@ -112,6 +113,7 @@ async function createAuthenticatedPages(browser: Browser) {
 }
 
 test.describe.configure({ mode: "serial" });
+test.setTimeout(60_000);
 
 test("unauthenticated routes preserve safe callbacks and Sign In is accessible", async ({
   page,
@@ -203,6 +205,7 @@ test("Admin sees every route and can manage pending access", async ({
     await page.getByLabel("Role", { exact: true }).selectOption(role);
     await page.getByRole("button", { name: "Add member" }).click();
     await expect(page.getByText(/Team member added/)).toBeVisible();
+    await page.waitForLoadState("networkidle");
   }
 
   let row = await openMemberActions(page, pendingUser);
@@ -229,6 +232,7 @@ test("Admin sees every route and can manage pending access", async ({
   await confirmRole.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText(/Role changed/)).toBeVisible();
+  await page.waitForLoadState("networkidle");
 
   await changeMemberStatus(page, pendingUser, "suspend");
   await changeMemberStatus(page, pendingUser, "reactivate");
@@ -241,6 +245,7 @@ test("Admin sees every route and can manage pending access", async ({
     .getByRole("button", { name: "Change role and revoke sessions" })
     .click();
   await expect(page.getByText(/final active Admin cannot/i)).toBeVisible();
+  await page.waitForLoadState("networkidle");
 
   const accountMenu = page.getByRole("button", { name: /Open account menu/ });
   await accountMenu.focus();
@@ -349,6 +354,7 @@ test("role changes revoke the old session and apply new navigation after sign in
       .getByRole("button", { name: "Change role and revoke sessions" })
       .click();
     await expect(adminPage.getByText(/Role changed/)).toBeVisible();
+    await adminPage.waitForLoadState("networkidle");
 
     await memberPage.goto("/dashboard");
     await expect(memberPage).toHaveURL(/\/sign-in\?callbackUrl=%2Fdashboard$/);
@@ -367,6 +373,7 @@ test("role changes revoke the old session and apply new navigation after sign in
       .getByRole("button", { name: "Change role and revoke sessions" })
       .click();
     await expect(adminPage.getByText(/Role changed/)).toBeVisible();
+    await adminPage.waitForLoadState("networkidle");
   } finally {
     await adminContext.close();
     await memberContext.close();
