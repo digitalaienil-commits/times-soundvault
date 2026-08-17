@@ -74,6 +74,32 @@ async function openMemberActions(page: Page, email: string) {
   return row;
 }
 
+async function openRoleChangeDialog(
+  page: Page,
+  email: string,
+  role: "admin" | "music_producer" | "coordinator" | "user",
+) {
+  const dialog = page.getByRole("alertdialog");
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (await dialog.isVisible()) return dialog;
+    const row = await openMemberActions(page, email);
+    try {
+      await row
+        .getByLabel("Assigned role")
+        .selectOption(role, { timeout: 2_500 });
+      await row
+        .getByRole("button", { name: "Review role change" })
+        .click({ timeout: 2_500 });
+      await expect(dialog).toBeVisible({ timeout: 2_500 });
+      return dialog;
+    } catch {
+      await page.waitForTimeout(100);
+    }
+  }
+  await expect(dialog).toBeVisible();
+  return dialog;
+}
+
 async function changeMemberStatus(
   page: Page,
   email: string,
@@ -208,11 +234,7 @@ test("Admin sees every route and can manage pending access", async ({
     await page.waitForLoadState("networkidle");
   }
 
-  let row = await openMemberActions(page, pendingUser);
-  await row.getByLabel("Assigned role").selectOption("coordinator");
-  const roleTrigger = row.getByRole("button", { name: "Review role change" });
-  await roleTrigger.click();
-  const roleDialog = page.getByRole("alertdialog");
+  let roleDialog = await openRoleChangeDialog(page, pendingUser, "coordinator");
   await expect(
     roleDialog.getByRole("heading", { name: "Confirm role change" }),
   ).toBeVisible();
@@ -224,8 +246,7 @@ test("Admin sees every route and can manage pending access", async ({
       page.evaluate(() => document.activeElement?.textContent?.trim() ?? ""),
     )
     .toMatch(/Review role change|Manage access/);
-  row = await openMemberActions(page, pendingUser);
-  await row.getByRole("button", { name: "Review role change" }).click();
+  roleDialog = await openRoleChangeDialog(page, pendingUser, "coordinator");
   const confirmRole = page
     .getByRole("alertdialog")
     .getByRole("button", { name: "Change role and revoke sessions" });
@@ -237,11 +258,8 @@ test("Admin sees every route and can manage pending access", async ({
   await changeMemberStatus(page, pendingUser, "suspend");
   await changeMemberStatus(page, pendingUser, "reactivate");
 
-  row = await openMemberActions(page, identities.admin.email);
-  await row.getByLabel("Assigned role").selectOption("user");
-  await row.getByRole("button", { name: "Review role change" }).click();
-  await page
-    .getByRole("alertdialog")
+  roleDialog = await openRoleChangeDialog(page, identities.admin.email, "user");
+  await roleDialog
     .getByRole("button", { name: "Change role and revoke sessions" })
     .click();
   await expect(page.getByText(/final active Admin cannot/i)).toBeVisible();
@@ -346,11 +364,12 @@ test("role changes revoke the old session and apply new navigation after sign in
     await signIn(memberPage, identities.producer, "/dashboard");
     await adminPage.goto("/team");
 
-    let row = await openMemberActions(adminPage, identities.producer.email);
-    await row.getByLabel("Assigned role").selectOption("coordinator");
-    await row.getByRole("button", { name: "Review role change" }).click();
-    await adminPage
-      .getByRole("alertdialog")
+    let roleDialog = await openRoleChangeDialog(
+      adminPage,
+      identities.producer.email,
+      "coordinator",
+    );
+    await roleDialog
       .getByRole("button", { name: "Change role and revoke sessions" })
       .click();
     await expect(adminPage.getByText(/Role changed/)).toBeVisible();
@@ -365,11 +384,12 @@ test("role changes revoke the old session and apply new navigation after sign in
       ["My Uploads", "Team", "Admin"],
     );
 
-    row = await openMemberActions(adminPage, identities.producer.email);
-    await row.getByLabel("Assigned role").selectOption("music_producer");
-    await row.getByRole("button", { name: "Review role change" }).click();
-    await adminPage
-      .getByRole("alertdialog")
+    roleDialog = await openRoleChangeDialog(
+      adminPage,
+      identities.producer.email,
+      "music_producer",
+    );
+    await roleDialog
       .getByRole("button", { name: "Change role and revoke sessions" })
       .click();
     await expect(adminPage.getByText(/Role changed/)).toBeVisible();
