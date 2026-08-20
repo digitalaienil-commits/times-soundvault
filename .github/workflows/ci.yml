@@ -58,6 +58,7 @@ jobs:
         run: |
           docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
           pnpm auth:migrate
+          pnpm domain:migrate
 
       - name: Check formatting
         run: pnpm format:check
@@ -132,6 +133,7 @@ jobs:
         run: |
           docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
           pnpm auth:migrate
+          pnpm domain:migrate
           pnpm auth:seed-local
 
       - name: Install Chromium

@@ -2,7 +2,7 @@
 
 ## Product rules
 
-Times SoundVault is an internal Mirchi/Times audio workspace. The final roles
+Times SoundVault is an internal Times Group audio workspace. The final roles
 are `admin`, `music_producer`, `coordinator`, and `user`. Admin can do
 everything. Music Producer manages owned submissions. Coordinator reviews and
 approves. User only searches, listens, and downloads from the published
@@ -16,6 +16,15 @@ secrets remain server-side and no secret may use a public environment variable.
 
 The Channels concept is prohibited. Do not add related navigation, filters,
 badges, models, mock data, counts, or copy.
+
+Composition and Track are separate concepts. Stems are revision-bound Track
+assets, while cut-downs, remixes and alternate mixes are child Tracks.
+Submitted revisions are never silently overwritten. Producer, embedded, AI and
+Coordinator-approved metadata retain their provenance; provider output never
+becomes canonical metadata directly. User catalog queries explicitly filter
+published Tracks, and Producer submission queries explicitly scope owner.
+Workflow, analysis, copyright and publication states remain separate. Never add
+fake catalog records.
 
 ## Architecture
 

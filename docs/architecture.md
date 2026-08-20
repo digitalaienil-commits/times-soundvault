@@ -2,15 +2,15 @@
 
 ## Ownership and dependency direction
 
-| Area                       | Owns                                                     |
-| -------------------------- | -------------------------------------------------------- |
-| `src/app`                  | Thin routes, metadata, layouts and feature composition   |
-| `src/features`             | Feature-specific UI, actions, data and logic             |
-| `src/components/ui`        | Reusable primitives                                      |
-| `src/components/shared`    | Feature-neutral product components                       |
-| `src/components/shell`     | Authenticated frame and role-aware navigation            |
-| `src/lib`                  | Auth, database, authorization and cross-cutting behavior |
-| `src/config` / `src/types` | Typed configuration and contracts                        |
+| Area                       | Owns                                                    |
+| -------------------------- | ------------------------------------------------------- |
+| `src/app`                  | Thin routes, metadata, layouts and feature composition  |
+| `src/features`             | Feature-specific UI, actions, data and logic            |
+| `src/components/ui`        | Reusable primitives                                     |
+| `src/components/shared`    | Feature-neutral product components                      |
+| `src/components/shell`     | Authenticated frame and role-aware navigation           |
+| `src/lib`                  | Auth, database, domain repositories and shared behavior |
+| `src/config` / `src/types` | Typed configuration and contracts                       |
 
 Dependencies point toward stable types and utilities. Shared layers never
 import features, and one feature never imports another feature. Server
@@ -53,9 +53,21 @@ Provider secrets, OAuth tokens, password hashes and session tokens never cross
 the server boundary. Future audio/provider SDKs remain behind server adapters;
 they are not imported into UI modules.
 
-## Future domain boundary
+## Domain boundary
 
-Section 3 adds audio, catalog and submission records without changing the four
-roles or authentication boundary. Later processing services can sit behind a
-typed server API and job boundary. The shell can add a persistent player beside
-`main` without moving route ownership.
+Section 3 owns four application schemas without changing the authentication
+boundary:
+
+- `catalog`: Compositions, Tracks, recording versions, assets, files, canonical
+  metadata and taxonomy;
+- `workflow`: Submission batches, Submissions, immutable Revisions and events;
+- `rights`: revision-specific Producer rights declarations;
+- `system`: checksummed domain migration history.
+
+Server-only repositories live below `src/lib/domain` and accept an injected
+PostgreSQL query boundary. They use fully qualified, parameterized SQL and map
+database rows into stable DTOs. Producer reads include `owner_user_id` in SQL;
+Library reads include `publication_status = 'published'` in SQL. React routes
+compose these operations but do not own SQL. Later processing services can sit
+behind typed adapters and job boundaries without merging workflow, analysis,
+copyright and publication state.

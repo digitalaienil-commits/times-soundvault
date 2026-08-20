@@ -343,6 +343,9 @@ test("User lands in Library and cannot reach privileged routes", async ({
   page,
 }) => {
   await signIn(page, identities.user, "/library", "/");
+  await expect(
+    page.getByRole("heading", { name: "No published tracks yet" }),
+  ).toBeVisible();
   await expectNavigation(
     page,
     ["Library"],
@@ -368,6 +371,52 @@ test("User lands in Library and cannot reach privileged routes", async ({
     await page.goto(path);
     await expect(page).toHaveURL(/\/access-denied$/);
   }
+});
+
+test("database-backed domain empty states remain responsive and accessible", async ({
+  page,
+}) => {
+  await signIn(page, identities.admin, "/dashboard");
+  const destinations = [
+    ["/library", "No published tracks yet"],
+    ["/my-uploads", "No submissions yet"],
+    ["/review", "Nothing waiting for review"],
+  ] as const;
+
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 1024, height: 768 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    for (const [path, emptyHeading] of destinations) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { name: emptyHeading, level: 2 }),
+      ).toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+    }
+  }
+
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "2";
+  });
+  await expect(
+    page.getByRole("heading", { name: "Nothing waiting for review" }),
+  ).toBeVisible();
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(
+    results.violations.filter(
+      (violation) =>
+        violation.impact === "serious" || violation.impact === "critical",
+    ),
+  ).toEqual([]);
 });
 
 test("suspension revokes an already active session", async ({ browser }) => {

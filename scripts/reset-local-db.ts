@@ -22,7 +22,9 @@ function main() {
   console.info("Removing only the Times SoundVault local PostgreSQL volume.");
   runDocker(["down", "--volumes", "--remove-orphans"]);
   runDocker(["up", "-d", "--wait"]);
-  console.info("Local PostgreSQL was reset. Run pnpm auth:migrate next.");
+  console.info(
+    "Local PostgreSQL was reset. Run pnpm auth:migrate, then pnpm domain:migrate.",
+  );
 }
 
 try {

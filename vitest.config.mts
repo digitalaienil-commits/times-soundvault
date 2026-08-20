@@ -8,6 +8,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
+      "server-only": path.resolve(
+        import.meta.dirname,
+        "./src/test/server-only.ts",
+      ),
     },
   },
   test: {
@@ -15,5 +19,6 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: true,
+    fileParallelism: false,
   },
 });

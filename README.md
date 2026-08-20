@@ -1,10 +1,10 @@
 # Times SoundVault
 
 Times SoundVault is The Times Group's internal workspace for music intake,
-review, publication and discovery. Section 2 adds PostgreSQL-backed Better Auth,
-pre-authorised team access, four server-owned roles and a functional Admin Team
-workspace. Audio and submission records begin in Section 3; current workflow
-routes intentionally show honest placeholders instead of sample business data.
+review, publication and discovery. Section 2 provides PostgreSQL-backed Better
+Auth, pre-authorised team access, four server-owned roles and a functional Admin
+Team workspace. Section 3 adds the persistent Composition, Track, Submission,
+Revision, asset, metadata and rights foundation without inventing business data.
 
 ## Role model
 
@@ -34,6 +34,7 @@ pnpm install --frozen-lockfile
 pnpm db:up
 pnpm auth:setup-local
 pnpm auth:migrate
+pnpm domain:migrate
 pnpm auth:seed-local
 pnpm dev
 ```
@@ -42,7 +43,8 @@ Open [http://localhost:3000](http://localhost:3000). `auth:setup-local` creates
 an ignored `.env.local` with generated local-only credentials and refuses to
 overwrite an existing file. It never prints passwords. Developers who do not
 use Docker can point `DATABASE_URL` at an existing PostgreSQL 17 database,
-create the `auth` schema, and start at `pnpm auth:migrate`.
+create the `auth` schema, and run `pnpm auth:migrate` followed by
+`pnpm domain:migrate`.
 
 Local authentication exposes four direct role choices for the seeded Admin,
 Music Producer, Coordinator and User identities. Every configured credential
@@ -60,6 +62,8 @@ pnpm auth:migrate
 pnpm auth:seed-local
 pnpm auth:bootstrap-admin -- --email admin@company.example
 pnpm auth:list-team
+pnpm domain:migrate
+pnpm domain:status
 ```
 
 Bootstrap creates or updates one pending Admin assignment. It does not create
@@ -94,6 +98,8 @@ pnpm db:up           # start the pinned PostgreSQL 17 Compose service
 pnpm db:down         # stop the service without deleting its volume
 pnpm db:logs         # follow PostgreSQL logs
 pnpm db:reset        # guarded local-only reset; requires confirmation
+pnpm domain:migrate  # apply checksummed catalog/workflow/rights migrations
+pnpm domain:status   # report applied, pending or changed domain migrations
 pnpm dev
 pnpm format
 pnpm format:check
@@ -121,6 +127,13 @@ suspended. See [docs/authentication.md](docs/authentication.md),
 [docs/access-control.md](docs/access-control.md) and
 [docs/team-access.md](docs/team-access.md).
 
+Application-owned records live in the fully qualified `catalog`, `workflow`,
+`rights` and `system` schemas. The migration runner verifies SHA-256 checksums
+and refuses changed applied migrations. See
+[docs/domain-model.md](docs/domain-model.md),
+[docs/catalog-metadata.md](docs/catalog-metadata.md) and
+[docs/submission-lifecycle.md](docs/submission-lifecycle.md).
+
 ## Brand asset
 
 The shell and authentication screens use the supplied Times Group logo from
@@ -131,11 +144,12 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 
 - Google and Microsoft modes require real organization credentials and have not
   been live-tested by the repository test suite.
-- Audio, catalog, upload processing, analysis, review records, publication,
-  playback and downloads are planned work; no fake records are shown.
+- File upload, provider analysis, copyright checks, review actions, publication
+  controls, playback and downloads remain planned work; no fake records are
+  shown.
 - Team access sends no invitation email.
 - Automated accessibility coverage complements manual keyboard, zoom and
   assistive-technology review.
 
-The next milestone is **Section 3: Audio, Catalog & Submission Domain**. The
-complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).
+The next milestone is **Section 4: Producer & Coordinator Upload Workspace**.
+The complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).

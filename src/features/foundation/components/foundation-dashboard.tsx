@@ -54,9 +54,9 @@ export function FoundationDashboard({ role }: { role: UserRole }) {
             {ROLE_WELCOME[role]}
           </h2>
           <p className="mt-3 max-w-2xl leading-7 text-muted-foreground">
-            Section 2 secures who can reach each workflow. Audio and submission
-            records begin in Section 3, so these destinations remain honest
-            foundations until their data exists.
+            Work from the same governed catalog across submissions, review and
+            the published Library. Each destination reflects real records and
+            your assigned access.
           </p>
         </div>
       </section>

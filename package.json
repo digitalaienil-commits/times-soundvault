@@ -13,6 +13,8 @@
     "auth:seed-local": "tsx scripts/seed-local-auth.ts",
     "auth:bootstrap-admin": "tsx scripts/bootstrap-admin.ts",
     "auth:list-team": "tsx scripts/list-team.ts",
+    "domain:migrate": "tsx scripts/migrate-domain.ts",
+    "domain:status": "tsx scripts/domain-status.ts",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
