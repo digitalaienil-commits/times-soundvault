@@ -17,7 +17,7 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Move music submissions through one clear, accountable internal workflow."
       />
-      <FoundationDashboard role={user.role} />
+      <FoundationDashboard role={user.role} userId={user.id} />
     </>
   );
 }

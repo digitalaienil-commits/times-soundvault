@@ -10,6 +10,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { UserRole } from "@/types/auth";
 
+import { getDashboardMetrics } from "../data/dashboard-metrics";
+import { DashboardMetrics } from "./dashboard-metrics";
+
 const ROLE_WELCOME: Record<Exclude<UserRole, "user">, string> = {
   admin: "Control the music workflow from intake to publication.",
   music_producer: "Upload, improve and track every music submission.",
@@ -35,10 +38,22 @@ const QUICK_ACTIONS = {
   ],
 } as const;
 
-export function FoundationDashboard({ role }: { role: UserRole }) {
+export async function FoundationDashboard({
+  role,
+  userId,
+}: {
+  role: UserRole;
+  userId: string;
+}) {
   if (role === "user") return null;
+  const metrics = await getDashboardMetrics(
+    role === "music_producer" ? userId : null,
+  );
+
   return (
     <div className="mt-8 space-y-6">
+      <DashboardMetrics metrics={metrics} role={role} />
+
       <section
         aria-labelledby="welcome-title"
         className="overflow-hidden rounded-xl border border-brand/15 bg-brand-soft"
