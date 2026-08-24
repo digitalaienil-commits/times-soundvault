@@ -1,4 +1,4 @@
-import { PROTECTED_ROUTES } from "./route-policy";
+import { matchWorkspaceRoute } from "./route-policy";
 
 const BLOCKED_ENCODING = /%(?:2f|5c)/i;
 
@@ -22,10 +22,7 @@ export function sanitizeCallbackUrl(
     if (
       parsed.origin !== "https://soundvault.invalid" ||
       parsed.hash ||
-      (parsed.pathname !== "/" &&
-        !PROTECTED_ROUTES.includes(
-          parsed.pathname as (typeof PROTECTED_ROUTES)[number],
-        ))
+      (parsed.pathname !== "/" && !matchWorkspaceRoute(parsed.pathname))
     ) {
       return fallback;
     }

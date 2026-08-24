@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import type { WorkspaceRoute } from "@/types/navigation";
 
 import {
+  canAccessRouteFamily,
   canAccessRoute,
   getDefaultRouteForRole,
+  matchWorkspaceRoute,
   PROTECTED_ROUTES,
 } from "./route-policy";
 
@@ -22,7 +24,14 @@ describe("server route policy", () => {
     ],
     [
       "coordinator",
-      ["/dashboard", "/library", "/upload", "/review", "/demands"],
+      [
+        "/dashboard",
+        "/library",
+        "/my-uploads",
+        "/upload",
+        "/review",
+        "/demands",
+      ],
     ],
     ["user", ["/library"]],
   ] as const)("enforces the %s route boundary", (role, allowed) => {
@@ -34,6 +43,21 @@ describe("server route policy", () => {
 
   it("fails closed for unknown roles independently of navigation", () => {
     expect(canAccessRoute("reviewer", "/library")).toBe(false);
+  });
+
+  it("matches only exact dynamic route families", () => {
+    expect(
+      matchWorkspaceRoute("/upload/550e8400-e29b-41d4-a716-446655440000"),
+    ).toBe("/upload/[batchId]");
+    expect(matchWorkspaceRoute("/submissions/example")).toBe(
+      "/submissions/[submissionId]",
+    );
+    expect(matchWorkspaceRoute("/uploading/example")).toBeNull();
+    expect(matchWorkspaceRoute("/upload/example/extra")).toBeNull();
+    expect(canAccessRouteFamily("user", "/upload/[batchId]")).toBe(false);
+    expect(
+      canAccessRouteFamily("coordinator", "/submissions/[submissionId]"),
+    ).toBe(true);
   });
 
   it("lands User in Library and operational roles in Dashboard", () => {

@@ -330,8 +330,15 @@ test("Coordinator navigation and server routes match the permission model", asyn
   await signIn(page, identities.coordinator, "/dashboard");
   await expectNavigation(
     page,
-    ["Dashboard", "Library", "Review Queue", "Upload", "Demand Sheet"],
-    ["My Uploads", "Submissions", "Team", "Admin"],
+    [
+      "Dashboard",
+      "Library",
+      "My Uploads",
+      "Review Queue",
+      "Upload",
+      "Demand Sheet",
+    ],
+    ["Submissions", "Team", "Admin"],
   );
   for (const path of ["/team", "/admin"]) {
     await page.goto(path);
@@ -464,8 +471,15 @@ test("role changes revoke the old session and apply new navigation after sign in
     await signIn(memberPage, identities.producer, "/dashboard");
     await expectNavigation(
       memberPage,
-      ["Dashboard", "Library", "Review Queue", "Upload", "Demand Sheet"],
-      ["My Uploads", "Team", "Admin"],
+      [
+        "Dashboard",
+        "Library",
+        "My Uploads",
+        "Review Queue",
+        "Upload",
+        "Demand Sheet",
+      ],
+      ["Team", "Admin"],
     );
 
     roleDialog = await openRoleChangeDialog(

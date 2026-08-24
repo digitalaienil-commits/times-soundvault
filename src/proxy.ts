@@ -32,6 +32,7 @@ export const config = {
     "/library/:path*",
     "/my-uploads/:path*",
     "/upload/:path*",
+    "/submissions/:path*",
     "/review/:path*",
     "/demands/:path*",
     "/team/:path*",

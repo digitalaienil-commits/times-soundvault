@@ -12,6 +12,9 @@ export type WorkspaceRoute =
   | "/team"
   | "/admin";
 
+export type WorkspaceRouteFamily =
+  WorkspaceRoute | "/upload/[batchId]" | "/submissions/[submissionId]";
+
 export interface NavigationItem {
   href: WorkspaceRoute;
   label: string;
