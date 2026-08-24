@@ -16,17 +16,12 @@ const webhookSchema = z.object({
   }),
 });
 
-const unsignedTestSchema = z.object({
-  version: z.literal("2"),
-  resource: z.object({
-    type: z.literal("IntegrationTest"),
-    id: z.string().max(200),
-  }),
-  event: z.object({
-    type: z.literal("IntegrationTest"),
-    status: z.literal("test"),
-  }),
-});
+const unsignedTestSchema = z
+  .object({
+    type: z.literal("TEST"),
+    data: z.null(),
+  })
+  .strict();
 
 export type CyaniteWebhookPayload = z.infer<typeof webhookSchema>;
 

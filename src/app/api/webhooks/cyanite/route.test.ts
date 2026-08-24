@@ -12,11 +12,7 @@ vi.mock("@/lib/database/database", () => ({ getDatabase }));
 
 import { POST } from "./route";
 
-const integrationTestBody = JSON.stringify({
-  version: "2",
-  resource: { type: "IntegrationTest", id: "test-1" },
-  event: { type: "IntegrationTest", status: "test" },
-});
+const integrationTestBody = JSON.stringify({ type: "TEST", data: null });
 
 describe("Cyanite webhook route", () => {
   beforeEach(() => {
@@ -48,10 +44,7 @@ describe("Cyanite webhook route", () => {
     const response = await POST(
       new Request("http://localhost/api/webhooks/cyanite", {
         method: "POST",
-        body: integrationTestBody.replace(
-          '"status":"test"',
-          '"status":"finished"',
-        ),
+        body: JSON.stringify({ type: "TEST", data: {} }),
       }),
     );
 

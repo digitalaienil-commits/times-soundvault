@@ -27,7 +27,7 @@ Raw results are bounded and retained with provider/version/run provenance. Norma
 
 Use `pnpm cyanite:verify` only with real credentials. `pnpm cyanite:reconcile` repairs missing result-fetch work without uploading again.
 
-For initial development integration setup, `CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST=true` permits only Cyanite's recognized `IntegrationTest` payload before an access token exists. It never writes a webhook event or processing job. This mode is rejected in production; disable it immediately after the dashboard test and configure the real webhook secret so normal delivery remains signature-verified.
+For initial development integration setup, `CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST=true` permits only Cyanite's exact unsigned dashboard test payload (`{"type":"TEST","data":null}`) before an access token exists. It never writes a webhook event or processing job. This mode is rejected in production; disable it immediately after the dashboard test and configure the real webhook secret so normal delivery remains signature-verified.
 
 ## Production configuration
 

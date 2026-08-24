@@ -32,16 +32,17 @@ describe("Cyanite webhook security", () => {
   });
 
   it("recognizes only the documented unsigned integration test event", () => {
-    const testBody = JSON.stringify({
-      version: "2",
-      resource: { type: "IntegrationTest", id: "test-1" },
-      event: { type: "IntegrationTest", status: "test" },
-    });
+    const testBody = JSON.stringify({ type: "TEST", data: null });
 
     expect(isRecognizedUnsignedCyaniteTest(testBody)).toBe(true);
     expect(
       isRecognizedUnsignedCyaniteTest(
-        testBody.replace('"status":"test"', '"status":"finished"'),
+        JSON.stringify({ type: "TEST", data: { unexpected: true } }),
+      ),
+    ).toBe(false);
+    expect(
+      isRecognizedUnsignedCyaniteTest(
+        JSON.stringify({ type: "TEST", data: null, unexpected: true }),
       ),
     ).toBe(false);
     expect(isRecognizedUnsignedCyaniteTest(body)).toBe(false);
