@@ -27,6 +27,8 @@ Raw results are bounded and retained with provider/version/run provenance. Norma
 
 Use `pnpm cyanite:verify` only with real credentials. `pnpm cyanite:reconcile` repairs missing result-fetch work without uploading again.
 
+For initial development integration setup, `CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST=true` permits only Cyanite's recognized `IntegrationTest` payload before an access token exists. It never writes a webhook event or processing job. This mode is rejected in production; disable it immediately after the dashboard test and configure the real webhook secret so normal delivery remains signature-verified.
+
 ## Production configuration
 
 Run the app and worker as separate processes with the same PostgreSQL, storage, processing, and server-only Cyanite configuration. Install FFmpeg and ffprobe on the worker host. Expose `/api/webhooks/cyanite` over HTTPS and configure the matching webhook secret in Cyanite. Schedule reconciliation and cleanup. Monitor structured job records without filenames, tokens, signed URLs, or audio.

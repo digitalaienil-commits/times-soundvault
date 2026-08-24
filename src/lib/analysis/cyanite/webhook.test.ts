@@ -2,7 +2,11 @@ import { createHmac } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-import { parseCyaniteWebhook, verifyCyaniteWebhookSignature } from "./webhook";
+import {
+  isRecognizedUnsignedCyaniteTest,
+  parseCyaniteWebhook,
+  verifyCyaniteWebhookSignature,
+} from "./webhook";
 
 const body = JSON.stringify({
   version: "2",
@@ -25,5 +29,21 @@ describe("Cyanite webhook security", () => {
     expect(() =>
       parseCyaniteWebhook(body.replace("AudioAnalysisV6", "AudioAnalysisV7")),
     ).toThrow(/supported V7/);
+  });
+
+  it("recognizes only the documented unsigned integration test event", () => {
+    const testBody = JSON.stringify({
+      version: "2",
+      resource: { type: "IntegrationTest", id: "test-1" },
+      event: { type: "IntegrationTest", status: "test" },
+    });
+
+    expect(isRecognizedUnsignedCyaniteTest(testBody)).toBe(true);
+    expect(
+      isRecognizedUnsignedCyaniteTest(
+        testBody.replace('"status":"test"', '"status":"finished"'),
+      ),
+    ).toBe(false);
+    expect(isRecognizedUnsignedCyaniteTest(body)).toBe(false);
   });
 });

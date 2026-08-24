@@ -7,12 +7,15 @@ const booleanString = z
   .default("false")
   .transform((value) => value === "true");
 
-const cyaniteEnvironmentSchema = z.object({
+const cyaniteWebhookEnvironmentSchema = z.object({
   CYANITE_ENABLED: booleanString,
-  CYANITE_API_URL: z.url().default("https://api.cyanite.ai/graphql"),
-  CYANITE_ACCESS_TOKEN: z.string().trim().optional(),
   CYANITE_WEBHOOK_SECRET: z.string().trim().optional(),
   CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST: booleanString,
+});
+
+const cyaniteEnvironmentSchema = cyaniteWebhookEnvironmentSchema.extend({
+  CYANITE_API_URL: z.url().default("https://api.cyanite.ai/graphql"),
+  CYANITE_ACCESS_TOKEN: z.string().trim().optional(),
   CYANITE_REQUEST_TIMEOUT_MS: z.coerce
     .number()
     .int()
@@ -31,9 +34,14 @@ export interface CyaniteConfig {
   maxRetries: number;
 }
 
-export function parseCyaniteConfig(
-  raw: Readonly<Record<string, string | undefined>> = process.env,
-): CyaniteConfig {
+export interface CyaniteWebhookConfig {
+  webhookSecret?: string;
+  allowUnsignedTest: boolean;
+}
+
+function assertNoPublicCyaniteVariables(
+  raw: Readonly<Record<string, string | undefined>>,
+) {
   for (const key of Object.keys(raw)) {
     if (key.startsWith("NEXT_PUBLIC_") && key.includes("CYANITE")) {
       throw new Error(
@@ -41,27 +49,44 @@ export function parseCyaniteConfig(
       );
     }
   }
-  const parsed = cyaniteEnvironmentSchema.parse(raw);
-  if (parsed.CYANITE_ENABLED && !parsed.CYANITE_ACCESS_TOKEN) {
-    throw new Error("CYANITE_ACCESS_TOKEN is required when Cyanite is enabled");
-  }
+}
+
+function assertCyaniteWebhookSecurity(
+  config: {
+    CYANITE_ENABLED: boolean;
+    CYANITE_WEBHOOK_SECRET?: string;
+    CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST: boolean;
+  },
+  nodeEnvironment: string | undefined,
+) {
   if (
-    parsed.CYANITE_ENABLED &&
-    raw.NODE_ENV === "production" &&
-    !parsed.CYANITE_WEBHOOK_SECRET
+    config.CYANITE_ENABLED &&
+    nodeEnvironment === "production" &&
+    !config.CYANITE_WEBHOOK_SECRET
   ) {
     throw new Error(
       "CYANITE_WEBHOOK_SECRET is required when Cyanite is enabled in production",
     );
   }
   if (
-    raw.NODE_ENV === "production" &&
-    parsed.CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST
+    nodeEnvironment === "production" &&
+    config.CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST
   ) {
     throw new Error(
       "Unsigned Cyanite test webhooks are forbidden in production",
     );
   }
+}
+
+export function parseCyaniteConfig(
+  raw: Readonly<Record<string, string | undefined>> = process.env,
+): CyaniteConfig {
+  assertNoPublicCyaniteVariables(raw);
+  const parsed = cyaniteEnvironmentSchema.parse(raw);
+  if (parsed.CYANITE_ENABLED && !parsed.CYANITE_ACCESS_TOKEN) {
+    throw new Error("CYANITE_ACCESS_TOKEN is required when Cyanite is enabled");
+  }
+  assertCyaniteWebhookSecurity(parsed, raw.NODE_ENV);
   return {
     enabled: parsed.CYANITE_ENABLED,
     apiUrl: parsed.CYANITE_API_URL,
@@ -70,5 +95,17 @@ export function parseCyaniteConfig(
     allowUnsignedTest: parsed.CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST,
     requestTimeoutMs: parsed.CYANITE_REQUEST_TIMEOUT_MS,
     maxRetries: parsed.CYANITE_MAX_RETRIES,
+  };
+}
+
+export function parseCyaniteWebhookConfig(
+  raw: Readonly<Record<string, string | undefined>> = process.env,
+): CyaniteWebhookConfig {
+  assertNoPublicCyaniteVariables(raw);
+  const parsed = cyaniteWebhookEnvironmentSchema.parse(raw);
+  assertCyaniteWebhookSecurity(parsed, raw.NODE_ENV);
+  return {
+    webhookSecret: parsed.CYANITE_WEBHOOK_SECRET,
+    allowUnsignedTest: parsed.CYANITE_WEBHOOK_ALLOW_UNSIGNED_TEST,
   };
 }

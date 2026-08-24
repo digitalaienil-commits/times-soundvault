@@ -1,4 +1,4 @@
-import { parseCyaniteConfig } from "@/lib/analysis/cyanite/config";
+import { parseCyaniteWebhookConfig } from "@/lib/analysis/cyanite/config";
 import {
   cyaniteWebhookPayloadHash,
   isRecognizedUnsignedCyaniteTest,
@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
-  const config = parseCyaniteConfig();
+  const config = parseCyaniteWebhookConfig();
   if (config.allowUnsignedTest && isRecognizedUnsignedCyaniteTest(rawBody))
     return Response.json({ received: true, test: true });
   if (
