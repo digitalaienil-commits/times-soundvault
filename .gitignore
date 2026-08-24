@@ -51,3 +51,4 @@ next-env.d.ts
 /.postgres-data/
 /auth-info.json
 /.soundvault-storage/
+/.soundvault-processing/

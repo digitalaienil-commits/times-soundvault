@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { UploadSubmissionDetail } from "@/features/uploads/components/submission-detail";
+import { ProcessingAnalysis } from "@/features/processing/components/processing-analysis";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
 import { getRevisionRightsDeclaration } from "@/lib/domain/rights/rights";
 import { canMutateUploadSubmission } from "@/lib/domain/uploads/authorization";
@@ -11,6 +12,8 @@ import {
   getUploadSubmissionEvents,
   getUploadWorkspaceSubmission,
 } from "@/lib/domain/uploads/uploads";
+import { getDatabase } from "@/lib/database/database";
+import { loadProcessingAnalysis } from "@/lib/processing/repository";
 
 export const metadata: Metadata = { title: "Submission Details" };
 
@@ -29,9 +32,10 @@ export default async function SubmissionDetailPage({
     user,
   );
   if (!submission) notFound();
-  const [rights, events] = await Promise.all([
+  const [rights, events, processing] = await Promise.all([
     getRevisionRightsDeclaration(submission.revisionId),
     getUploadSubmissionEvents(submission.id),
+    loadProcessingAnalysis(getDatabase(), submission.revisionId),
   ]);
   return (
     <>
@@ -45,6 +49,13 @@ export default async function SubmissionDetailPage({
         events={events}
         canMutate={canMutateUploadSubmission(user, submission.ownerUserId)}
       />
+      <div className="mt-6">
+        <ProcessingAnalysis
+          analysis={processing}
+          submissionId={submission.id}
+          canRetry={canMutateUploadSubmission(user, submission.ownerUserId)}
+        />
+      </div>
     </>
   );
 }

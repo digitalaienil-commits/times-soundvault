@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import {
   link,
   mkdir,
@@ -18,6 +18,8 @@ import { assertAudioSignature } from "../signature";
 import type {
   CreateStorageUploadInput,
   DeleteDraftObjectInput,
+  MaterializedObject,
+  MaterializeStoredObjectInput,
   StorageProvider,
   StorageUploadSession,
   StorageUploadSessionReference,
@@ -219,5 +221,34 @@ export class LocalStorageProvider implements StorageProvider {
       rm(finalPath, { force: true }),
       rm(`${finalPath}.part`, { force: true }),
     ]);
+  }
+
+  async materializeStoredObject(
+    input: MaterializeStoredObjectInput,
+  ): Promise<MaterializedObject> {
+    const sourcePath = this.resolveStorageKey(input.storageKey);
+    await mkdir(path.dirname(input.destinationPath), {
+      recursive: true,
+      mode: 0o700,
+    });
+    try {
+      await pipeline(
+        createReadStream(sourcePath),
+        createWriteStream(input.destinationPath, { flags: "wx", mode: 0o600 }),
+      );
+      return {
+        path: input.destinationPath,
+        byteSize: (await stat(input.destinationPath)).size,
+      };
+    } catch (error) {
+      await rm(input.destinationPath, { force: true });
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new StorageProviderError(
+          "SOURCE_MISSING",
+          "Stored source audio is unavailable",
+        );
+      }
+      throw error;
+    }
   }
 }

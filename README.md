@@ -172,5 +172,7 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 - Automated accessibility coverage complements manual keyboard, zoom and
   assistive-technology review.
 
-The next milestone is **Section 5: Technical Processing & Cyanite Analysis**.
+Section 5, **Technical Processing & Cyanite Analysis**, is complete. See [the processing and Cyanite operations guide](docs/technical-processing-cyanite.md).
+
+The next milestone is **Section 6: YouTube Copyright & Content ID Workflow**.
 The complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).

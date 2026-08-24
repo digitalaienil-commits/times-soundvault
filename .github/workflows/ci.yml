@@ -56,6 +56,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install audio processing tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
       - name: Prepare empty authentication database
         run: |
           docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
@@ -81,6 +84,9 @@ jobs:
         run: |
           pnpm storage:verify
           pnpm uploads:cleanup
+          pnpm processing:once
+          pnpm processing:reconcile
+          pnpm processing:cleanup
 
       - name: Build production application
         run: pnpm build
@@ -140,6 +146,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install audio processing tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Prepare and seed authentication database
         run: |

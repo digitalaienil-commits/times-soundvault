@@ -362,6 +362,26 @@ export async function transitionSubmissionStatus(
         );
       }
       await client.query(
+        `INSERT INTO analysis.revision_analysis
+           (id, submission_revision_id, track_id, overall_status)
+         SELECT $1, submission.current_revision_id, submission.track_id, 'queued'
+         FROM workflow.submission submission WHERE submission.id = $2
+         ON CONFLICT (submission_revision_id) DO NOTHING`,
+        [randomUUID(), input.submissionId],
+      );
+      await client.query(
+        `INSERT INTO analysis.processing_job
+           (id, job_type, submission_id, submission_revision_id, idempotency_key)
+         VALUES ($1,'revision_processing',$2,$3,$4)
+         ON CONFLICT (idempotency_key) DO NOTHING`,
+        [
+          randomUUID(),
+          input.submissionId,
+          state.current_revision_id,
+          `revision:${state.current_revision_id}:processing`,
+        ],
+      );
+      await client.query(
         `UPDATE workflow.submission_revision
          SET revision_status = 'superseded'
          WHERE submission_id = $1

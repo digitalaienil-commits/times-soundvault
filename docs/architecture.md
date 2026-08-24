@@ -40,6 +40,8 @@ status changes write audit events and revoke target sessions.
 
 ## Runtime shape
 
+Technical audio and provider analysis run outside the request lifecycle in a durable worker. The app and worker share PostgreSQL and private storage, while provider credentials remain behind server adapters. See [Technical processing and Cyanite](technical-processing-cyanite.md).
+
 ```text
 Browser
   -> Next.js route / Server Action

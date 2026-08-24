@@ -60,6 +60,18 @@ export interface DeleteDraftObjectInput {
   reference: StorageUploadSessionReference;
 }
 
+export interface MaterializeStoredObjectInput {
+  storageKey: string;
+  providerDriveId?: string | null;
+  providerItemId?: string | null;
+  destinationPath: string;
+}
+
+export interface MaterializedObject {
+  path: string;
+  byteSize: number;
+}
+
 export interface StorageProvider {
   readonly kind: StorageKind;
   createUploadSession(
@@ -74,6 +86,9 @@ export interface StorageProvider {
     input: VerifyCompletedUploadInput,
   ): Promise<StoredObject>;
   deleteDraftObject(input: DeleteDraftObjectInput): Promise<void>;
+  materializeStoredObject(
+    input: MaterializeStoredObjectInput,
+  ): Promise<MaterializedObject>;
 }
 
 export class StorageProviderError extends Error {
@@ -84,6 +99,7 @@ export class StorageProviderError extends Error {
       | "SIZE_MISMATCH"
       | "SESSION_EXPIRED"
       | "STORAGE_CONFLICT"
+      | "SOURCE_MISSING"
       | "PROVIDER_FAILURE",
     message: string,
   ) {

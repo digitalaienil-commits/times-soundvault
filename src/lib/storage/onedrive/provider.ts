@@ -1,11 +1,18 @@
 import "server-only";
 
 import { ClientSecretCredential } from "@azure/identity";
+import { createWriteStream } from "node:fs";
+import { mkdir, rm, stat } from "node:fs/promises";
+import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
 import { assertAudioSignature } from "../signature";
 import type {
   CreateStorageUploadInput,
   DeleteDraftObjectInput,
+  MaterializedObject,
+  MaterializeStoredObjectInput,
   StorageProvider,
   StorageUploadSession,
   StorageUploadSessionReference,
@@ -312,6 +319,53 @@ export class OneDriveStorageProvider implements StorageProvider {
         "PROVIDER_FAILURE",
         "OneDrive draft deletion failed",
       );
+    }
+  }
+
+  async materializeStoredObject(
+    input: MaterializeStoredObjectInput,
+  ): Promise<MaterializedObject> {
+    if (
+      input.providerDriveId !== this.config.driveId ||
+      !input.providerItemId
+    ) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "OneDrive source reference is invalid",
+      );
+    }
+    const url = `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(this.config.driveId)}/items/${encodeURIComponent(input.providerItemId)}/content`;
+    const response = await this.request(url, {
+      headers: { Authorization: await this.authorizationHeader() },
+    });
+    if (response.status === 404) {
+      throw new StorageProviderError(
+        "SOURCE_MISSING",
+        "Stored source audio is unavailable",
+      );
+    }
+    if (!response.ok || !response.body) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "OneDrive source download failed",
+      );
+    }
+    await mkdir(path.dirname(input.destinationPath), {
+      recursive: true,
+      mode: 0o700,
+    });
+    try {
+      await pipeline(
+        Readable.fromWeb(response.body as never),
+        createWriteStream(input.destinationPath, { flags: "wx", mode: 0o600 }),
+      );
+      return {
+        path: input.destinationPath,
+        byteSize: (await stat(input.destinationPath)).size,
+      };
+    } catch (error) {
+      await rm(input.destinationPath, { force: true });
+      throw error;
     }
   }
 }

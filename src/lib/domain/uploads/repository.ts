@@ -708,6 +708,26 @@ export async function submitCompletedDraft(
        ) VALUES ($1,$2,$3,$4,'submitted','draft','submitted')`,
       [randomUUID(), submissionId, submission.current_revision_id, user.id],
     );
+    await client.query(
+      `INSERT INTO analysis.revision_analysis
+         (id, submission_revision_id, track_id, overall_status)
+       SELECT $1, submission.current_revision_id, submission.track_id, 'queued'
+       FROM workflow.submission submission WHERE submission.id = $2
+       ON CONFLICT (submission_revision_id) DO NOTHING`,
+      [randomUUID(), submissionId],
+    );
+    await client.query(
+      `INSERT INTO analysis.processing_job
+         (id, job_type, submission_id, submission_revision_id, idempotency_key)
+       VALUES ($1,'revision_processing',$2,$3,$4)
+       ON CONFLICT (idempotency_key) DO NOTHING`,
+      [
+        randomUUID(),
+        submissionId,
+        submission.current_revision_id,
+        `revision:${submission.current_revision_id}:processing`,
+      ],
+    );
   });
 }
 

@@ -380,14 +380,14 @@ test("User lands in Library and cannot reach privileged routes", async ({
   }
 });
 
-test("database-backed domain empty states remain responsive and accessible", async ({
+test("database-backed domain states remain responsive and accessible", async ({
   page,
 }) => {
   await signIn(page, identities.admin, "/dashboard");
   const destinations = [
-    ["/library", "No published tracks yet"],
-    ["/my-uploads", "No submissions yet"],
-    ["/review", "Nothing waiting for review"],
+    ["/library", /No published tracks yet|Published tracks/],
+    ["/my-uploads", /No submissions yet|Upload submissions/],
+    ["/review", /Nothing waiting for review|Reviewable submissions/],
   ] as const;
 
   for (const viewport of [
@@ -413,7 +413,9 @@ test("database-backed domain empty states remain responsive and accessible", asy
     document.documentElement.style.zoom = "2";
   });
   await expect(
-    page.getByRole("heading", { name: "Nothing waiting for review" }),
+    page.getByRole("heading", {
+      name: /Nothing waiting for review|Reviewable submissions/,
+    }),
   ).toBeVisible();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])

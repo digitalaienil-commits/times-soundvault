@@ -21,9 +21,10 @@ const identities = {
 };
 
 function wav(): Buffer {
-  const buffer = Buffer.alloc(48);
+  const dataBytes = 16_000;
+  const buffer = Buffer.alloc(44 + dataBytes);
   buffer.write("RIFF", 0);
-  buffer.writeUInt32LE(40, 4);
+  buffer.writeUInt32LE(36 + dataBytes, 4);
   buffer.write("WAVE", 8);
   buffer.write("fmt ", 12);
   buffer.writeUInt32LE(16, 16);
@@ -34,7 +35,7 @@ function wav(): Buffer {
   buffer.writeUInt16LE(2, 32);
   buffer.writeUInt16LE(16, 34);
   buffer.write("data", 36);
-  buffer.writeUInt32LE(4, 40);
+  buffer.writeUInt32LE(dataBytes, 40);
   return buffer;
 }
 
@@ -91,7 +92,12 @@ async function selectFiles(
   page: Page,
   files: Parameters<ReturnType<Page["locator"]>["setInputFiles"]>[0],
 ) {
-  await page.locator("#soundvault-files").setInputFiles(files);
+  await expect(
+    page.getByRole("heading", { name: "Upload music", level: 1 }),
+  ).toBeVisible();
+  const input = page.locator("#soundvault-files");
+  await expect(input).toBeAttached();
+  await input.setInputFiles(files);
 }
 
 let producerDraftBatchId = "";
