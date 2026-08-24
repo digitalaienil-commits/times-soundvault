@@ -72,6 +72,19 @@ export interface MaterializedObject {
   byteSize: number;
 }
 
+export interface OpenStoredObjectInput {
+  storageKey: string;
+  providerDriveId?: string | null;
+  providerItemId?: string | null;
+  start: number;
+  end: number;
+}
+
+export interface OpenedStoredObject {
+  body: ReadableStream<Uint8Array>;
+  contentLength: number;
+}
+
 export interface StorageProvider {
   readonly kind: StorageKind;
   createUploadSession(
@@ -89,6 +102,7 @@ export interface StorageProvider {
   materializeStoredObject(
     input: MaterializeStoredObjectInput,
   ): Promise<MaterializedObject>;
+  openStoredObject(input: OpenStoredObjectInput): Promise<OpenedStoredObject>;
 }
 
 export class StorageProviderError extends Error {

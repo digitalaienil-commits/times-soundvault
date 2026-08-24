@@ -46,7 +46,6 @@ export const COPYRIGHT_STATUSES = [
   "not_started",
   "queued",
   "checking",
-  "clear",
   "claim_found",
   "conflict",
   "manual_review",

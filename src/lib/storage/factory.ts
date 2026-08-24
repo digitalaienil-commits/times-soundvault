@@ -13,3 +13,15 @@ export function createStorageProvider(): StorageProvider {
     throw new Error("OneDrive storage configuration is incomplete");
   return new OneDriveStorageProvider(config.oneDrive);
 }
+
+export function createStorageProviderForKind(
+  kind: "local" | "onedrive",
+): StorageProvider {
+  const provider = createStorageProvider();
+  if (provider.kind !== kind) {
+    throw new Error(
+      `Storage provider ${kind} is not configured on this server`,
+    );
+  }
+  return provider;
+}

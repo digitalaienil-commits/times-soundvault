@@ -277,7 +277,8 @@ test("Admin sees every route and can manage pending access", async ({
   ).toBeVisible();
   const cancelRole = roleDialog.getByRole("button", { name: "Cancel" });
   await expect(cancelRole).toBeVisible();
-  await cancelRole.press("Enter");
+  await page.keyboard.press("Escape");
+  await expect(roleDialog).toBeHidden();
   await expect
     .poll(() =>
       page.evaluate(() => document.activeElement?.textContent?.trim() ?? ""),
@@ -406,7 +407,7 @@ test("database-backed domain states remain responsive and accessible", async ({
   const destinations = [
     ["/library", /No published tracks yet|Published tracks/],
     ["/my-uploads", /No submissions yet|Upload submissions/],
-    ["/review", /Nothing waiting for review|Reviewable submissions/],
+    ["/review", /Oldest waiting first/],
     ["/copyright", /Current checks/],
   ] as const;
 

@@ -20,6 +20,8 @@ import type {
   DeleteDraftObjectInput,
   MaterializedObject,
   MaterializeStoredObjectInput,
+  OpenedStoredObject,
+  OpenStoredObjectInput,
   StorageProvider,
   StorageUploadSession,
   StorageUploadSessionReference,
@@ -242,6 +244,41 @@ export class LocalStorageProvider implements StorageProvider {
       };
     } catch (error) {
       await rm(input.destinationPath, { force: true });
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new StorageProviderError(
+          "SOURCE_MISSING",
+          "Stored source audio is unavailable",
+        );
+      }
+      throw error;
+    }
+  }
+
+  async openStoredObject(
+    input: OpenStoredObjectInput,
+  ): Promise<OpenedStoredObject> {
+    if (input.start < 0 || input.end < input.start) {
+      throw new StorageProviderError(
+        "INVALID_RANGE",
+        "Stored object range is invalid",
+      );
+    }
+    const sourcePath = this.resolveStorageKey(input.storageKey);
+    try {
+      const size = (await stat(sourcePath)).size;
+      if (input.end >= size) {
+        throw new StorageProviderError(
+          "INVALID_RANGE",
+          "Stored object range exceeds its size",
+        );
+      }
+      return {
+        body: Readable.toWeb(
+          createReadStream(sourcePath, { start: input.start, end: input.end }),
+        ) as ReadableStream<Uint8Array>,
+        contentLength: input.end - input.start + 1,
+      };
+    } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw new StorageProviderError(
           "SOURCE_MISSING",

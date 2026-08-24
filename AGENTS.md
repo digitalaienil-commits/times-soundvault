@@ -5,8 +5,11 @@
 Times SoundVault is an internal Times Group audio workspace. The final roles
 are `admin`, `music_producer`, `coordinator`, and `user`. Admin can do
 everything. Music Producer manages owned submissions. Coordinator reviews and
-approves. User only searches, listens, and downloads from the published
+prepares decision context. User only searches, listens, and downloads from the published
 Library. There is no Reviewer role.
+
+Section 7 never approves, requests changes, rejects, publishes or unpublishes.
+It prepares a revision-bound draft and checklist for the Section 8 decision.
 
 Navigation is not authorization. Every protected route and sensitive action
 checks permissions server-side. Roles are server-owned and may not be accepted

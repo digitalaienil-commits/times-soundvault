@@ -13,6 +13,8 @@ import type {
   DeleteDraftObjectInput,
   MaterializedObject,
   MaterializeStoredObjectInput,
+  OpenedStoredObject,
+  OpenStoredObjectInput,
   StorageProvider,
   StorageUploadSession,
   StorageUploadSessionReference,
@@ -367,5 +369,49 @@ export class OneDriveStorageProvider implements StorageProvider {
       await rm(input.destinationPath, { force: true });
       throw error;
     }
+  }
+
+  async openStoredObject(
+    input: OpenStoredObjectInput,
+  ): Promise<OpenedStoredObject> {
+    if (
+      input.start < 0 ||
+      input.end < input.start ||
+      !input.providerDriveId ||
+      !input.providerItemId ||
+      input.providerDriveId !== this.config.driveId
+    ) {
+      throw new StorageProviderError(
+        "INVALID_RANGE",
+        "OneDrive stored object range is invalid",
+      );
+    }
+    const url = `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(input.providerDriveId)}/items/${encodeURIComponent(input.providerItemId)}/content`;
+    const response = await this.request(url, {
+      headers: {
+        Authorization: await this.authorizationHeader(),
+        Range: `bytes=${input.start}-${input.end}`,
+      },
+      redirect: "follow",
+    });
+    if (response.status === 404) {
+      throw new StorageProviderError(
+        "SOURCE_MISSING",
+        "Stored source audio is unavailable",
+      );
+    }
+    if (
+      (response.status !== 200 && response.status !== 206) ||
+      !response.body
+    ) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Microsoft Graph audio read failed",
+      );
+    }
+    return {
+      body: response.body,
+      contentLength: input.end - input.start + 1,
+    };
   }
 }

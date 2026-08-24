@@ -14,7 +14,7 @@ optional Cyanite analysis and a manual-first YouTube copyright workflow.
 | -------------- | -------------------------------------------------------------------------- |
 | Admin          | Every workspace capability, including Team access and protected operations |
 | Music Producer | Own submissions, upload, published Library and Demand Sheet                |
-| Coordinator    | Upload, review, approve, resolve workflow exceptions and manage demand     |
+| Coordinator    | Upload, review, prepare decision context and manage demand                 |
 | User           | Search, listen to and download from the published Library only             |
 
 There is no Reviewer role. Navigation is filtered for clarity, but every
@@ -91,6 +91,7 @@ prints safe assignment metadata only.
 | `/upload/[batchId]`       | Same route roles; object ownership checked       |
 | `/submissions/[id]`       | Role permission plus object read policy          |
 | `/review`                 | Admin, Coordinator                               |
+| `/review/[submissionId]`  | Admin, Coordinator                               |
 | `/copyright`              | Admin, Coordinator                               |
 | `/copyright/batches/[id]` | Admin, Coordinator                               |
 | `/demands`                | Admin, Music Producer, Coordinator               |
@@ -183,7 +184,7 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 
 - Google and Microsoft modes require real organization credentials and have not
   been live-tested by the repository test suite.
-- Final Coordinator review decisions, publication controls, professional
+- Section 8 business decisions, publication controls, professional
   playback and catalog downloads remain planned work; no fake records are shown.
 - YouTube Content ID/CMS automation is not connected or live-tested. Section 6
   uses a manual operational workflow and is API-ready.
@@ -193,8 +194,12 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 - Automated accessibility coverage complements manual keyboard, zoom and
   assistive-technology review.
 
-Section 6, **YouTube Copyright & Content ID Workflow**, is complete in manual
-operational mode. See [the copyright operations guide](docs/copyright-operations.md).
+Section 7, **Coordinator Review Workspace**, is complete. It adds a filtered
+operational queue, atomic assignment, secure Master/Stem listening,
+source-aware metadata and taxonomy review, human checklist, internal notes and
+a locked Ready-for-Decision handoff. It performs no Section 8 business action.
+See [the review workspace guide](docs/coordinator-review-workspace.md) and
+[metadata provenance guide](docs/review-metadata-provenance.md).
 
-The next milestone is **Section 7: Coordinator Review Workspace**.
+The next milestone is **Section 8: Approval, Changes, Rejection & Publishing**.
 The complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).

@@ -79,3 +79,9 @@ Submission approval and publication are separate. Normal Library queries
 explicitly select only `catalog.track.publication_status = 'published'`. A
 published Track points to a Revision belonging to that same Track. Withdrawal
 or archival does not rewrite submission history.
+
+Section 7 adds one `workflow.review_case` per reviewed Revision, with a separate
+metadata draft, controlled-term selections, checklist, append-only notes and
+events. These proposed values never update `catalog.track_metadata`, accept a
+taxonomy assignment or change publication state. Section 8 consumes the locked
+`ReviewDecisionPacket` and performs any approved promotion transactionally.

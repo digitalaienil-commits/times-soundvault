@@ -69,6 +69,20 @@ Handlers authorize before opening a private artifact and stream it with
 The `manual_youtube` provider reports `connected: false` and performs no network
 operation. UI modules never import a Google or YouTube SDK.
 
+## Coordinator review boundary
+
+`src/lib/review` owns the Section 7 aggregate, transactions, optimistic
+concurrency and server-only `ReviewDecisionPacket`. `src/features/review` owns
+the queue and review workspace UI. A Review Case belongs to exactly one
+Submission Revision. Source metadata stays immutable; Coordinator choices live
+in a separate draft with field-level source, actor and timestamp.
+
+Review audio is authorized by object association and Submission state before
+the storage adapter opens a bounded byte range. Local paths, storage keys,
+OneDrive content URLs and provider credentials never enter the browser DTO.
+Ready for Decision locks the review records but leaves the Submission
+`in_review`; Section 8 owns business decisions and canonical promotion.
+
 ## Domain boundary
 
 Section 3 owns four application schemas without changing the authentication
@@ -76,7 +90,8 @@ boundary:
 
 - `catalog`: Compositions, Tracks, recording versions, assets, files, canonical
   metadata and taxonomy;
-- `workflow`: Submission batches, Submissions, immutable Revisions and events;
+- `workflow`: Submission batches, Submissions, immutable Revisions, review
+  cases, Coordinator drafts, checklist, notes and events;
 - `rights`: revision-specific Producer declarations, copyright checks,
   eligibility reviews, observations, manual batches, reference links and jobs;
 - `system`: checksummed domain migration history.

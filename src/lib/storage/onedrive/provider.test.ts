@@ -171,6 +171,32 @@ describe("OneDrive SharePoint storage adapter", () => {
     expect(() => assertValidOneDriveChunkSize(1024)).toThrow(/320 KiB/);
   });
 
+  it("streams a bounded server-authorized content range without exposing Graph", async () => {
+    const request = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        expect(new Headers(init?.headers).get("Authorization")).toBe(
+          "Bearer token",
+        );
+        expect(new Headers(init?.headers).get("Range")).toBe("bytes=10-19");
+        return new Response(new Uint8Array(10), { status: 206 });
+      },
+    );
+    const provider = new OneDriveStorageProvider(
+      config,
+      request as typeof fetch,
+      async () => "token",
+    );
+    const opened = await provider.openStoredObject({
+      storageKey: "private.wav",
+      providerDriveId: "drive-1",
+      providerItemId: "item-1",
+      start: 10,
+      end: 19,
+    });
+    expect(opened.contentLength).toBe(10);
+    expect(request).toHaveBeenCalledOnce();
+  });
+
   it("rejects a non-final chunk that is not a 320 KiB multiple", async () => {
     const provider = new OneDriveStorageProvider(
       config,

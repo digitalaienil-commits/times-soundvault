@@ -8,7 +8,7 @@ Status is marked complete only after the section’s required checks pass.
 4. Producer & Coordinator Upload Workspace — complete
 5. Technical Processing & Cyanite Analysis — complete
 6. YouTube Copyright & Content ID Workflow — complete
-7. Coordinator Review Workspace — planned
+7. Coordinator Review Workspace — complete
 8. Approval, Changes, Rejection & Publishing — planned
 9. Searchable Published Library — planned
 10. Professional Player, Stems & Downloads — planned
@@ -21,3 +21,8 @@ Section 6 adds an independent copyright state axis, human Content ID eligibility
 assessment, private Master-only manual-check batches, immutable observations,
 durable jobs and a disabled future provider boundary. It deliberately stops
 before Section 7 review decisions and Section 8 publication.
+
+Section 7 adds the server-filtered review queue, atomic assignment, secure
+review-only audio ranges, revision-bound Coordinator draft, controlled taxonomy
+decisions, append-only notes, human checklist and a locked Ready-for-Decision
+handoff. The Submission remains `in_review`; Section 8 is the next milestone.

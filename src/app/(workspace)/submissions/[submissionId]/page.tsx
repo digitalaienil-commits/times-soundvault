@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
 import { PageHeader } from "@/components/shared/page-header";
+import { Button } from "@/components/ui/button";
 import { UploadSubmissionDetail } from "@/features/uploads/components/submission-detail";
 import { ProcessingAnalysis } from "@/features/processing/components/processing-analysis";
 import { CopyrightSummary } from "@/features/copyright/components/copyright-summary";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
+import { hasPermission } from "@/lib/auth/permissions";
 import { getRevisionRightsDeclaration } from "@/lib/domain/rights/rights";
 import { canMutateUploadSubmission } from "@/lib/domain/uploads/authorization";
 import {
@@ -50,6 +53,16 @@ export default async function SubmissionDetailPage({
       <PageHeader
         title={submission.title}
         description={`Submission ${submission.status.replaceAll("_", " ")} · owned by ${submission.ownerName}`}
+        actions={
+          hasPermission(user.role, "submission.review") &&
+          ["ready_for_review", "in_review"].includes(submission.status) ? (
+            <Button asChild>
+              <Link href={`/review/${submission.id}`}>
+                Open Review Workspace
+              </Link>
+            </Button>
+          ) : null
+        }
       />
       <UploadSubmissionDetail
         submission={submission}

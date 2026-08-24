@@ -16,6 +16,7 @@ export type WorkspaceRoute =
 export type WorkspaceRouteFamily =
   | WorkspaceRoute
   | "/upload/[batchId]"
+  | "/review/[submissionId]"
   | "/submissions/[submissionId]"
   | "/copyright/batches/[batchId]";
 

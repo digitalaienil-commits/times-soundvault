@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -84,6 +85,19 @@ describe("local private storage provider", () => {
     });
     expect(object.storageKey).not.toContain("original");
     expect(await readFile(path.join(root, object.storageKey))).toEqual(bytes);
+    const opened = await storage.openStoredObject({
+      storageKey: object.storageKey,
+      start: 8,
+      end: 11,
+    });
+    expect(opened.contentLength).toBe(4);
+    expect(
+      Buffer.from(await new Response(opened.body).arrayBuffer()).toString(),
+    ).toBe("WAVE");
+    const persistedBytes = await readFile(path.join(root, object.storageKey));
+    expect(createHash("sha256").update(persistedBytes).digest("hex")).toBe(
+      createHash("sha256").update(bytes).digest("hex"),
+    );
     await expect(
       readFile(path.join(root, `${object.storageKey}.part`)),
     ).rejects.toThrow();

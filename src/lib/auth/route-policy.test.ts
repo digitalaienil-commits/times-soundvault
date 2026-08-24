@@ -53,12 +53,21 @@ describe("server route policy", () => {
     expect(matchWorkspaceRoute("/submissions/example")).toBe(
       "/submissions/[submissionId]",
     );
+    expect(matchWorkspaceRoute("/review/example")).toBe(
+      "/review/[submissionId]",
+    );
     expect(matchWorkspaceRoute("/copyright/batches/example")).toBe(
       "/copyright/batches/[batchId]",
     );
     expect(matchWorkspaceRoute("/uploading/example")).toBeNull();
     expect(matchWorkspaceRoute("/upload/example/extra")).toBeNull();
     expect(canAccessRouteFamily("user", "/upload/[batchId]")).toBe(false);
+    expect(canAccessRouteFamily("coordinator", "/review/[submissionId]")).toBe(
+      true,
+    );
+    expect(
+      canAccessRouteFamily("music_producer", "/review/[submissionId]"),
+    ).toBe(false);
     expect(
       canAccessRouteFamily("coordinator", "/submissions/[submissionId]"),
     ).toBe(true);

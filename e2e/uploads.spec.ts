@@ -95,6 +95,7 @@ async function selectFiles(
   await expect(
     page.getByRole("heading", { name: "Upload music", level: 1 }),
   ).toBeVisible();
+  await page.waitForLoadState("networkidle");
   const input = page.locator("#soundvault-files");
   await expect(input).toBeAttached();
   await input.setInputFiles(files);
