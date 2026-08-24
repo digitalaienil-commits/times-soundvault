@@ -26,6 +26,19 @@ published Tracks, and Producer submission queries explicitly scope owner.
 Workflow, analysis, copyright and publication states remain separate. Never add
 fake catalog records.
 
+Upload Sessions are server-owned and object-authorized. Music Producer and
+Coordinator can mutate only owned drafts; Admin can operate any draft; User has
+no upload access. Coordinator may read team submissions but cannot mutate
+another owner. Dynamic routes use exact typed route families, never pathname
+prefix authorization.
+
+Keep storage providers behind `src/lib/storage`. Local objects stay outside
+`public`, use generated names and `.part` isolation, stream sequential ranges,
+verify exact size/signature and complete atomically without overwrite.
+OneDrive means a dedicated SharePoint drive/root with app-only Azure identity;
+encrypt upload URLs, never add the Graph bearer token to upload-URL PUTs, and
+verify the final item independently. Never silently fall back providers.
+
 ## Architecture
 
 - `src/app` keeps routes thin and composes features.

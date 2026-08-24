@@ -7,13 +7,14 @@ import { redirect } from "next/navigation";
 import { getDatabase } from "@/lib/database/database";
 import type { CurrentUser } from "@/types/auth";
 import type { WorkspaceRoute } from "@/types/navigation";
+import type { WorkspaceRouteFamily } from "@/types/navigation";
 
 import { auth } from "./auth";
 import { sanitizeCallbackUrl } from "./callback-url";
 import { toCurrentUser } from "./current-user-dto";
 import type { Permission } from "./permissions";
 import { hasPermission } from "./permissions";
-import { canAccessRoute } from "./route-policy";
+import { canAccessRoute, canAccessRouteFamily } from "./route-policy";
 import { findTeamAccessByUserId } from "./team-access-repository";
 
 export type AuthState =
@@ -75,6 +76,17 @@ export async function requireRouteAccess(
 ): Promise<CurrentUser> {
   const user = await requireCurrentUser(route);
   if (!canAccessRoute(user.role, route)) {
+    redirect("/access-denied");
+  }
+  return user;
+}
+
+export async function requireRouteFamilyAccess(
+  route: WorkspaceRouteFamily,
+  callbackUrl: string,
+): Promise<CurrentUser> {
+  const user = await requireCurrentUser(callbackUrl);
+  if (!canAccessRouteFamily(user.role, route)) {
     redirect("/access-denied");
   }
   return user;

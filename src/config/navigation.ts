@@ -28,7 +28,7 @@ export const navigationItems = [
     href: "/my-uploads",
     label: "My Uploads",
     icon: FileAudio,
-    roles: ["music_producer"],
+    roles: ["music_producer", "coordinator"],
   },
   {
     href: "/my-uploads",

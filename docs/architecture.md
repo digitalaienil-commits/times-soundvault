@@ -47,6 +47,7 @@ Browser
   -> SoundVault active team assignment
   -> capability or route policy
   -> feature / PostgreSQL transaction
+  -> server-only storage adapter (upload routes only)
 ```
 
 Provider secrets, OAuth tokens, password hashes and session tokens never cross
@@ -71,3 +72,25 @@ Library reads include `publication_status = 'published'` in SQL. React routes
 compose these operations but do not own SQL. Later processing services can sit
 behind typed adapters and job boundaries without merging workflow, analysis,
 copyright and publication state.
+
+## Upload and storage boundary
+
+The Upload feature owns browser selection, grouping, optional Producer
+metadata, acknowledgement and transfer controls. Route Handlers revalidate the
+authenticated user and object owner for every session operation. The browser
+receives limits and safe session DTOs only; it never receives filesystem paths,
+Graph credentials or reusable provider URLs.
+
+`src/lib/storage` defines one server-only interface with two adapters:
+
+- local storage streams sequential ranges into isolated `.part` objects,
+  validates exact bytes and audio signatures, then atomically publishes without
+  overwriting an existing object;
+- OneDrive uses app-only Azure identity for a configured SharePoint drive/root,
+  encrypts upload URLs at rest with AES-256-GCM, sends chunk PUTs without the
+  Graph authorization header, follows `nextExpectedRanges`, and independently
+  verifies drive, item, parent, name and size on completion.
+
+`workflow.upload_session` is transfer state, while `catalog.audio_file` becomes
+available only after provider verification. Neither state implies technical
+analysis, copyright clearance, approval or publication.

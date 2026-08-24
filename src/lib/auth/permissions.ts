@@ -51,6 +51,8 @@ const MUSIC_PRODUCER_PERMISSIONS = [
 const COORDINATOR_PERMISSIONS = [
   ...USER_PERMISSIONS,
   "submission.create",
+  "submission.readOwn",
+  "submission.updateOwn",
   "submission.readAll",
   "submission.review",
   "submission.metadataReview",

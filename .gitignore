@@ -50,3 +50,4 @@ next-env.d.ts
 # local PostgreSQL state and auth exports
 /.postgres-data/
 /auth-info.json
+/.soundvault-storage/

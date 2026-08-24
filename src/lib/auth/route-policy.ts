@@ -1,5 +1,5 @@
 import type { UserRole } from "@/types/auth";
-import type { WorkspaceRoute } from "@/types/navigation";
+import type { WorkspaceRoute, WorkspaceRouteFamily } from "@/types/navigation";
 
 import type { Permission } from "./permissions";
 import { hasPermission } from "./permissions";
@@ -15,6 +15,23 @@ export const ROUTE_PERMISSIONS = {
   "/admin": "system.manage",
 } as const satisfies Record<WorkspaceRoute, Permission>;
 
+export const ROUTE_FAMILY_PERMISSIONS = {
+  ...ROUTE_PERMISSIONS,
+  "/upload/[batchId]": "submission.create",
+  "/submissions/[submissionId]": "submission.readOwn",
+} as const satisfies Record<WorkspaceRouteFamily, Permission>;
+
+const DYNAMIC_ROUTE_FAMILIES = [
+  {
+    family: "/upload/[batchId]",
+    pattern: /^\/upload\/([^/]+)$/,
+  },
+  {
+    family: "/submissions/[submissionId]",
+    pattern: /^\/submissions\/([^/]+)$/,
+  },
+] as const;
+
 export const PROTECTED_ROUTES = Object.keys(
   ROUTE_PERMISSIONS,
 ) as WorkspaceRoute[];
@@ -25,6 +42,31 @@ export function isWorkspaceRoute(pathname: string): pathname is WorkspaceRoute {
 
 export function canAccessRoute(role: unknown, route: WorkspaceRoute): boolean {
   return hasPermission(role, ROUTE_PERMISSIONS[route]);
+}
+
+export function matchWorkspaceRoute(
+  pathname: string,
+): WorkspaceRouteFamily | null {
+  if (isWorkspaceRoute(pathname)) {
+    return pathname;
+  }
+  return (
+    DYNAMIC_ROUTE_FAMILIES.find(({ pattern }) => pattern.test(pathname))
+      ?.family ?? null
+  );
+}
+
+export function canAccessRouteFamily(
+  role: unknown,
+  route: WorkspaceRouteFamily,
+): boolean {
+  if (route === "/submissions/[submissionId]") {
+    return (
+      hasPermission(role, "submission.readOwn") ||
+      hasPermission(role, "submission.readAll")
+    );
+  }
+  return hasPermission(role, ROUTE_FAMILY_PERMISSIONS[route]);
 }
 
 export function getDefaultRouteForRole(role: UserRole): WorkspaceRoute {

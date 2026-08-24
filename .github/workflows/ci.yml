@@ -36,6 +36,8 @@ jobs:
       GOOGLE_CLIENT_ID: ci-google-client
       GOOGLE_CLIENT_SECRET: ci-google-secret
       GOOGLE_WORKSPACE_DOMAIN: soundvault.test
+      STORAGE_PROVIDER: local
+      LOCAL_STORAGE_ROOT: ${{ runner.temp }}/soundvault-storage
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -70,7 +72,15 @@ jobs:
         run: pnpm typecheck
 
       - name: Run unit tests
-        run: pnpm test
+        run: pnpm test:unit
+
+      - name: Run PostgreSQL integration tests
+        run: pnpm test:integration
+
+      - name: Verify private storage and cleanup dry run
+        run: |
+          pnpm storage:verify
+          pnpm uploads:cleanup
 
       - name: Build production application
         run: pnpm build
@@ -111,6 +121,8 @@ jobs:
       LOCAL_USER_NAME: Library User
       LOCAL_USER_EMAIL: user@soundvault.test
       LOCAL_USER_PASSWORD: local-user-password-ci
+      STORAGE_PROVIDER: local
+      LOCAL_STORAGE_ROOT: ${{ runner.temp }}/soundvault-storage
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -141,6 +153,10 @@ jobs:
 
       - name: Run browser tests
         run: pnpm test:e2e
+
+      - name: Clean temporary private storage
+        if: always()
+        run: rm -rf "$LOCAL_STORAGE_ROOT"
 
       - name: Upload browser report on failure
         if: failure()

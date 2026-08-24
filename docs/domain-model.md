@@ -52,9 +52,11 @@ coexists with, then supersedes, the earlier submitted snapshot.
 
 An Audio Asset is a logical master or stem. A partial unique index permits one
 master per Revision and multiple normalized stem types. An Audio File is a
-physical encoding reserved for Section 4 storage and Section 5 technical
-analysis. Checksums are indexed for duplicate discovery but intentionally are
-not globally unique.
+physical encoding. Section 4 registers it as pending and marks it available
+only after private storage verifies the expected byte size and WAV/MP3
+signature. Section 5 may add technical analysis without rewriting the original
+upload record. Checksums are indexed for duplicate discovery but intentionally
+are not globally unique.
 
 ## Taxonomy and rights
 

@@ -37,3 +37,9 @@ These states are intentionally separate:
 “Published”, “copyright clear”, “Cyanite complete” and “upload complete” are not
 Submission statuses. Section 3 defines processing contracts but does not add
 provider tables, SDKs or fake provider runs.
+
+Section 4 adds a separate Upload Session state axis: created, uploading, paused,
+completed, failed, cancelled or expired. A draft can be submitted only when it
+has exactly one Master, every registered Audio File is available, and the
+current Revision has the explicit internal-submission acknowledgement.
+Cancellation and cleanup never delete submitted content.

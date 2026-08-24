@@ -43,6 +43,8 @@ describe("four-role permissions", () => {
   });
 
   it("gives Coordinator review, approval and demand access without team management", () => {
+    expect(hasPermission("coordinator", "submission.readOwn")).toBe(true);
+    expect(hasPermission("coordinator", "submission.updateOwn")).toBe(true);
     expect(hasPermission("coordinator", "submission.review")).toBe(true);
     expect(hasPermission("coordinator", "submission.approve")).toBe(true);
     expect(hasPermission("coordinator", "demand.manage")).toBe(true);
@@ -71,7 +73,14 @@ describe("role-aware navigation", () => {
     ],
     [
       "coordinator",
-      ["Dashboard", "Library", "Review Queue", "Upload", "Demand Sheet"],
+      [
+        "Dashboard",
+        "Library",
+        "My Uploads",
+        "Review Queue",
+        "Upload",
+        "Demand Sheet",
+      ],
     ],
     ["user", ["Library"]],
   ] as const)("shows the intended %s navigation", (role, labels) => {
