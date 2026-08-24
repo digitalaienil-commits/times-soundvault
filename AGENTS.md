@@ -26,6 +26,12 @@ published Tracks, and Producer submission queries explicitly scope owner.
 Workflow, analysis, copyright and publication states remain separate. Never add
 fake catalog records.
 
+Copyright uses the manual `manual_youtube` provider until an approved partner
+integration exists. Never make a YouTube/Google request, imply CMS connectivity,
+or treat a test batch as a Content ID reference. Use “No claim observed”, never
+“Copyright Clear”; a Content ID claim is not a copyright strike. Test batches
+are Master-only private artifacts available only to Admin and Coordinator.
+
 Upload Sessions are server-owned and object-authorized. Music Producer and
 Coordinator can mutate only owned drafts; Admin can operate any draft; User has
 no upload access. Coordinator may read team submissions but cannot mutate

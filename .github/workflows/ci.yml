@@ -38,6 +38,20 @@ jobs:
       GOOGLE_WORKSPACE_DOMAIN: soundvault.test
       STORAGE_PROVIDER: local
       LOCAL_STORAGE_ROOT: ${{ runner.temp }}/soundvault-storage
+      COPYRIGHT_PROVIDER: manual_youtube
+      COPYRIGHT_TEMP_ROOT: ${{ runner.temp }}/soundvault-copyright
+      LOCAL_ADMIN_NAME: CI Admin
+      LOCAL_ADMIN_EMAIL: admin@soundvault.test
+      LOCAL_ADMIN_PASSWORD: ci-admin-password-only
+      LOCAL_PRODUCER_NAME: CI Producer
+      LOCAL_PRODUCER_EMAIL: producer@soundvault.test
+      LOCAL_PRODUCER_PASSWORD: ci-producer-password-only
+      LOCAL_COORDINATOR_NAME: CI Coordinator
+      LOCAL_COORDINATOR_EMAIL: coordinator@soundvault.test
+      LOCAL_COORDINATOR_PASSWORD: ci-coordinator-password-only
+      LOCAL_USER_NAME: CI User
+      LOCAL_USER_EMAIL: user@soundvault.test
+      LOCAL_USER_PASSWORD: ci-user-password-only
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -64,6 +78,7 @@ jobs:
           docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
           pnpm auth:migrate
           pnpm domain:migrate
+          pnpm auth:seed-local
 
       - name: Check formatting
         run: pnpm format:check
@@ -87,6 +102,10 @@ jobs:
           pnpm processing:once
           pnpm processing:reconcile
           pnpm processing:cleanup
+          pnpm copyright:status
+          pnpm copyright:once
+          pnpm copyright:reconcile
+          pnpm copyright:cleanup
 
       - name: Build production application
         run: pnpm build
@@ -129,6 +148,8 @@ jobs:
       LOCAL_USER_PASSWORD: local-user-password-ci
       STORAGE_PROVIDER: local
       LOCAL_STORAGE_ROOT: ${{ runner.temp }}/soundvault-storage
+      COPYRIGHT_PROVIDER: manual_youtube
+      COPYRIGHT_TEMP_ROOT: ${{ runner.temp }}/soundvault-copyright
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -165,7 +186,7 @@ jobs:
 
       - name: Clean temporary private storage
         if: always()
-        run: rm -rf "$LOCAL_STORAGE_ROOT"
+        run: rm -rf "$LOCAL_STORAGE_ROOT" "$COPYRIGHT_TEMP_ROOT"
 
       - name: Upload browser report on failure
         if: failure()

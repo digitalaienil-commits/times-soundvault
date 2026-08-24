@@ -30,6 +30,7 @@ describe("server route policy", () => {
         "/my-uploads",
         "/upload",
         "/review",
+        "/copyright",
         "/demands",
       ],
     ],
@@ -52,12 +53,18 @@ describe("server route policy", () => {
     expect(matchWorkspaceRoute("/submissions/example")).toBe(
       "/submissions/[submissionId]",
     );
+    expect(matchWorkspaceRoute("/copyright/batches/example")).toBe(
+      "/copyright/batches/[batchId]",
+    );
     expect(matchWorkspaceRoute("/uploading/example")).toBeNull();
     expect(matchWorkspaceRoute("/upload/example/extra")).toBeNull();
     expect(canAccessRouteFamily("user", "/upload/[batchId]")).toBe(false);
     expect(
       canAccessRouteFamily("coordinator", "/submissions/[submissionId]"),
     ).toBe(true);
+    expect(
+      canAccessRouteFamily("music_producer", "/copyright/batches/[batchId]"),
+    ).toBe(false);
   });
 
   it("lands User in Library and operational roles in Dashboard", () => {

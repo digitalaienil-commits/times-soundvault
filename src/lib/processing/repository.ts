@@ -482,6 +482,14 @@ export async function markTechnicalComplete(
      WHERE submission_revision_id = $1`,
     [revisionId],
   );
+  await database.query(
+    `UPDATE rights.copyright_check
+     SET status='ready',row_version=row_version+1,
+         last_error_code=NULL,last_error_message=NULL
+     WHERE submission_revision_id=$1 AND is_current
+       AND status IN ('not_started','awaiting_technical')`,
+    [revisionId],
+  );
 }
 
 export async function markTechnicalFailed(
@@ -497,6 +505,15 @@ export async function markTechnicalFailed(
          completed_at = now(), row_version = row_version + 1
      WHERE submission_revision_id = $1`,
     [revisionId, errorCode.slice(0, 100), errorMessage.slice(0, 500)],
+  );
+  await database.query(
+    `UPDATE rights.copyright_check
+     SET status='awaiting_technical',last_error_code='TECHNICAL_PROCESSING_FAILED',
+         last_error_message='Technical processing must succeed before a test batch can be built',
+         row_version=row_version+1
+     WHERE submission_revision_id=$1 AND is_current
+       AND status IN ('not_started','awaiting_technical','ready')`,
+    [revisionId],
   );
 }
 

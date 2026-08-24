@@ -5,8 +5,8 @@ review, publication and discovery. Section 2 provides PostgreSQL-backed Better
 Auth, pre-authorised team access, four server-owned roles and a functional Admin
 Team workspace. Section 3 adds the persistent Composition, Track, Submission,
 Revision, asset, metadata and rights foundation. Section 4 adds real private
-WAV/MP3 intake, bulk Track packaging, resumable transfers and owned draft
-submission without inventing provider analysis or business data.
+WAV/MP3 intake, bulk Track packaging, resumable transfers, technical processing,
+optional Cyanite analysis and a manual-first YouTube copyright workflow.
 
 ## Role model
 
@@ -78,22 +78,24 @@ prints safe assignment metadata only.
 
 ## Routes
 
-| Route                  | Access                                           |
-| ---------------------- | ------------------------------------------------ |
-| `/sign-in`             | Public authentication entry                      |
-| `/auth/error`          | Public safe authentication error                 |
-| `/access-not-assigned` | Authenticated identity without active assignment |
-| `/access-denied`       | Active identity without route permission         |
-| `/library`             | All four roles                                   |
-| `/dashboard`           | Admin, Music Producer, Coordinator               |
-| `/my-uploads`          | Admin, Music Producer, Coordinator               |
-| `/upload`              | Admin, Music Producer, Coordinator               |
-| `/upload/[batchId]`    | Same route roles; object ownership checked       |
-| `/submissions/[id]`    | Role permission plus object read policy          |
-| `/review`              | Admin, Coordinator                               |
-| `/demands`             | Admin, Music Producer, Coordinator               |
-| `/team`                | Admin                                            |
-| `/admin`               | Admin                                            |
+| Route                     | Access                                           |
+| ------------------------- | ------------------------------------------------ |
+| `/sign-in`                | Public authentication entry                      |
+| `/auth/error`             | Public safe authentication error                 |
+| `/access-not-assigned`    | Authenticated identity without active assignment |
+| `/access-denied`          | Active identity without route permission         |
+| `/library`                | All four roles                                   |
+| `/dashboard`              | Admin, Music Producer, Coordinator               |
+| `/my-uploads`             | Admin, Music Producer, Coordinator               |
+| `/upload`                 | Admin, Music Producer, Coordinator               |
+| `/upload/[batchId]`       | Same route roles; object ownership checked       |
+| `/submissions/[id]`       | Role permission plus object read policy          |
+| `/review`                 | Admin, Coordinator                               |
+| `/copyright`              | Admin, Coordinator                               |
+| `/copyright/batches/[id]` | Admin, Coordinator                               |
+| `/demands`                | Admin, Music Producer, Coordinator               |
+| `/team`                   | Admin                                            |
+| `/admin`                  | Admin                                            |
 
 `/` sends User directly to Library and the three operational roles to
 Dashboard. Generate is intentionally absent from the primary workspace.
@@ -109,6 +111,15 @@ pnpm domain:migrate  # apply checksummed catalog/workflow/rights migrations
 pnpm domain:status   # report applied, pending or changed domain migrations
 pnpm storage:verify  # validate private local or OneDrive configuration
 pnpm uploads:cleanup # dry-run expired/cancelled draft cleanup
+pnpm processing:worker
+pnpm processing:once
+pnpm processing:reconcile
+pnpm processing:cleanup
+pnpm copyright:worker    # build private manual-check test batches
+pnpm copyright:once      # process one copyright job
+pnpm copyright:reconcile # create missing checks and recover stale jobs
+pnpm copyright:cleanup   # remove expired private test artifacts
+pnpm copyright:status    # safe database counts; no YouTube request
 pnpm dev
 pnpm format
 pnpm format:check
@@ -153,6 +164,15 @@ URLs with AES-256-GCM, and verifies the final Graph item independently. See
 [docs/upload-workspace.md](docs/upload-workspace.md) and
 [docs/storage-provider-setup.md](docs/storage-provider-setup.md).
 
+Section 6 keeps copyright state separate from submission, technical analysis
+and publication. A durable worker creates a private Master-only MP4 and
+timestamp manifest; a Coordinator or Admin uploads it manually to an approved
+YouTube account and records only observations they actually verified. The test
+batch is never a Content ID reference. See
+[docs/youtube-copyright-workflow.md](docs/youtube-copyright-workflow.md),
+[docs/content-id-readiness.md](docs/content-id-readiness.md) and
+[docs/copyright-operations.md](docs/copyright-operations.md).
+
 ## Brand asset
 
 The shell and authentication screens use the supplied Times Group logo from
@@ -163,16 +183,18 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 
 - Google and Microsoft modes require real organization credentials and have not
   been live-tested by the repository test suite.
-- Cyanite/technical processing, copyright checks, final review decisions,
-  publication controls, playback and downloads remain planned work; no fake
-  records are shown.
+- Final Coordinator review decisions, publication controls, professional
+  playback and catalog downloads remain planned work; no fake records are shown.
+- YouTube Content ID/CMS automation is not connected or live-tested. Section 6
+  uses a manual operational workflow and is API-ready.
 - The OneDrive adapter is covered with mocked HTTP tests. Live Microsoft Graph
   upload testing requires organization credentials and is not performed in CI.
 - Team access sends no invitation email.
 - Automated accessibility coverage complements manual keyboard, zoom and
   assistive-technology review.
 
-Section 5, **Technical Processing & Cyanite Analysis**, is complete. See [the processing and Cyanite operations guide](docs/technical-processing-cyanite.md).
+Section 6, **YouTube Copyright & Content ID Workflow**, is complete in manual
+operational mode. See [the copyright operations guide](docs/copyright-operations.md).
 
-The next milestone is **Section 6: YouTube Copyright & Content ID Workflow**.
+The next milestone is **Section 7: Coordinator Review Workspace**.
 The complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).

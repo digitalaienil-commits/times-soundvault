@@ -728,6 +728,50 @@ export async function submitCompletedDraft(
         `revision:${submission.current_revision_id}:processing`,
       ],
     );
+    const copyrightCheckId = randomUUID();
+    const createdCopyrightCheck = await client.query(
+      `INSERT INTO rights.copyright_check (
+         id, submission_revision_id, track_id, status,
+         eligibility_status, readiness_status, created_by_user_id
+       )
+       SELECT $1, submission.current_revision_id, submission.track_id,
+              'awaiting_technical',
+              CASE
+                WHEN declaration.master_rights_basis = 'non_exclusive_license'
+                  OR declaration.composition_rights_basis = 'non_exclusive_license'
+                  THEN 'ineligible'
+                WHEN declaration.id IS NULL
+                  OR declaration.master_rights_basis = 'unknown'
+                  OR declaration.composition_rights_basis = 'unknown'
+                  THEN 'needs_rights_review'
+                WHEN declaration.master_rights_basis IN ('owned','exclusive_license')
+                  AND declaration.composition_rights_basis IN ('owned','exclusive_license')
+                  THEN 'potentially_eligible'
+                ELSE 'needs_policy_review'
+              END,
+              CASE
+                WHEN declaration.master_rights_basis = 'non_exclusive_license'
+                  OR declaration.composition_rights_basis = 'non_exclusive_license'
+                  THEN 'ineligible'
+                ELSE 'not_assessed'
+              END,
+              $3
+       FROM workflow.submission submission
+       LEFT JOIN rights.rights_declaration declaration
+         ON declaration.submission_revision_id = submission.current_revision_id
+       WHERE submission.id = $2
+       ON CONFLICT (submission_revision_id) WHERE is_current DO NOTHING
+       RETURNING id`,
+      [copyrightCheckId, submissionId, user.id],
+    );
+    if (createdCopyrightCheck.rowCount) {
+      await client.query(
+        `INSERT INTO rights.copyright_check_event (
+           id, copyright_check_id, actor_user_id, event_type, event_metadata
+         ) VALUES ($1,$2,$3,'copyright_check_created',$4)`,
+        [randomUUID(), copyrightCheckId, user.id, { source: "submission" }],
+      );
+    }
   });
 }
 

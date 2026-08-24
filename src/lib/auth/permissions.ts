@@ -29,6 +29,11 @@ export const PERMISSIONS = [
   "providers.manage",
   "system.manage",
   "audit.read",
+  "copyright.readOwn",
+  "copyright.readAll",
+  "copyright.prepare",
+  "copyright.record",
+  "copyright.resolve",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -46,6 +51,7 @@ const MUSIC_PRODUCER_PERMISSIONS = [
   "submission.readOwn",
   "submission.updateOwn",
   "demand.read",
+  "copyright.readOwn",
 ] as const satisfies readonly Permission[];
 
 const COORDINATOR_PERMISSIONS = [
@@ -64,6 +70,10 @@ const COORDINATOR_PERMISSIONS = [
   "demand.read",
   "demand.create",
   "demand.manage",
+  "copyright.readAll",
+  "copyright.prepare",
+  "copyright.record",
+  "copyright.resolve",
 ] as const satisfies readonly Permission[];
 
 const ROLE_PERMISSIONS = {

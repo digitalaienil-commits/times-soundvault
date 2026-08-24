@@ -8,12 +8,16 @@ export type WorkspaceRoute =
   | "/my-uploads"
   | "/upload"
   | "/review"
+  | "/copyright"
   | "/demands"
   | "/team"
   | "/admin";
 
 export type WorkspaceRouteFamily =
-  WorkspaceRoute | "/upload/[batchId]" | "/submissions/[submissionId]";
+  | WorkspaceRoute
+  | "/upload/[batchId]"
+  | "/submissions/[submissionId]"
+  | "/copyright/batches/[batchId]";
 
 export interface NavigationItem {
   href: WorkspaceRoute;

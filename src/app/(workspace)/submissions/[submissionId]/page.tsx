@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PageHeader } from "@/components/shared/page-header";
 import { UploadSubmissionDetail } from "@/features/uploads/components/submission-detail";
 import { ProcessingAnalysis } from "@/features/processing/components/processing-analysis";
+import { CopyrightSummary } from "@/features/copyright/components/copyright-summary";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
 import { getRevisionRightsDeclaration } from "@/lib/domain/rights/rights";
 import { canMutateUploadSubmission } from "@/lib/domain/uploads/authorization";
@@ -13,6 +14,7 @@ import {
   getUploadWorkspaceSubmission,
 } from "@/lib/domain/uploads/uploads";
 import { getDatabase } from "@/lib/database/database";
+import { getCopyrightSummary } from "@/lib/copyright/repository";
 import { loadProcessingAnalysis } from "@/lib/processing/repository";
 
 export const metadata: Metadata = { title: "Submission Details" };
@@ -32,10 +34,16 @@ export default async function SubmissionDetailPage({
     user,
   );
   if (!submission) notFound();
-  const [rights, events, processing] = await Promise.all([
+  const [rights, events, processing, copyright] = await Promise.all([
     getRevisionRightsDeclaration(submission.revisionId),
     getUploadSubmissionEvents(submission.id),
     loadProcessingAnalysis(getDatabase(), submission.revisionId),
+    getCopyrightSummary(
+      getDatabase(),
+      submission.revisionId,
+      submission.ownerUserId,
+      user,
+    ),
   ]);
   return (
     <>
@@ -55,6 +63,9 @@ export default async function SubmissionDetailPage({
           submissionId={submission.id}
           canRetry={canMutateUploadSubmission(user, submission.ownerUserId)}
         />
+      </div>
+      <div className="mt-6">
+        <CopyrightSummary summary={copyright} />
       </div>
     </>
   );

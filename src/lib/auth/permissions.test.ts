@@ -40,6 +40,8 @@ describe("four-role permissions", () => {
     expect(hasPermission("music_producer", "submission.readOwn")).toBe(true);
     expect(hasPermission("music_producer", "submission.updateOwn")).toBe(true);
     expect(hasPermission("music_producer", "submission.approve")).toBe(false);
+    expect(hasPermission("music_producer", "copyright.readOwn")).toBe(true);
+    expect(hasPermission("music_producer", "copyright.prepare")).toBe(false);
   });
 
   it("gives Coordinator review, approval and demand access without team management", () => {
@@ -49,6 +51,9 @@ describe("four-role permissions", () => {
     expect(hasPermission("coordinator", "submission.approve")).toBe(true);
     expect(hasPermission("coordinator", "demand.manage")).toBe(true);
     expect(hasPermission("coordinator", "team.manage")).toBe(false);
+    expect(hasPermission("coordinator", "copyright.readAll")).toBe(true);
+    expect(hasPermission("coordinator", "copyright.record")).toBe(true);
+    expect(hasPermission("user", "copyright.readOwn")).toBe(false);
   });
 });
 
@@ -61,6 +66,7 @@ describe("role-aware navigation", () => {
         "Library",
         "Submissions",
         "Review Queue",
+        "Copyright",
         "Upload",
         "Demand Sheet",
         "Team",
@@ -78,6 +84,7 @@ describe("role-aware navigation", () => {
         "Library",
         "My Uploads",
         "Review Queue",
+        "Copyright",
         "Upload",
         "Demand Sheet",
       ],

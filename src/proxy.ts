@@ -34,6 +34,7 @@ export const config = {
     "/upload/:path*",
     "/submissions/:path*",
     "/review/:path*",
+    "/copyright/:path*",
     "/demands/:path*",
     "/team/:path*",
     "/admin/:path*",

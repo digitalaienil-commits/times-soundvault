@@ -147,7 +147,7 @@ async function createAuthenticatedPages(browser: Browser) {
 }
 
 test.describe.configure({ mode: "serial" });
-test.setTimeout(60_000);
+test.setTimeout(90_000);
 
 test.beforeEach(async () => {
   if (!testDatabase) {
@@ -229,6 +229,7 @@ test("Admin sees every route and can manage pending access", async ({
       "Library",
       "Submissions",
       "Review Queue",
+      "Copyright",
       "Upload",
       "Demand Sheet",
       "Team",
@@ -242,6 +243,7 @@ test("Admin sees every route and can manage pending access", async ({
     ["/library", "Library"],
     ["/my-uploads", "Submissions"],
     ["/review", "Review Queue"],
+    ["/copyright", "Copyright Checks"],
     ["/upload", "Upload"],
     ["/demands", "Demand Sheet"],
     ["/team", "Team"],
@@ -274,8 +276,8 @@ test("Admin sees every route and can manage pending access", async ({
     roleDialog.getByRole("heading", { name: "Confirm role change" }),
   ).toBeVisible();
   const cancelRole = roleDialog.getByRole("button", { name: "Cancel" });
-  await cancelRole.focus();
-  await page.keyboard.press("Enter");
+  await expect(cancelRole).toBeVisible();
+  await cancelRole.press("Enter");
   await expect
     .poll(() =>
       page.evaluate(() => document.activeElement?.textContent?.trim() ?? ""),
@@ -316,9 +318,9 @@ test("Music Producer navigation and server routes match the permission model", a
   await expectNavigation(
     page,
     ["Dashboard", "Library", "My Uploads", "Upload", "Demand Sheet"],
-    ["Review Queue", "Team", "Admin", "Submissions"],
+    ["Review Queue", "Copyright", "Team", "Admin", "Submissions"],
   );
-  for (const path of ["/review", "/team", "/admin"]) {
+  for (const path of ["/review", "/copyright", "/team", "/admin"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/access-denied$/);
   }
@@ -335,11 +337,26 @@ test("Coordinator navigation and server routes match the permission model", asyn
       "Library",
       "My Uploads",
       "Review Queue",
+      "Copyright",
       "Upload",
       "Demand Sheet",
     ],
     ["Submissions", "Team", "Admin"],
   );
+  await page.goto("/copyright");
+  await expect(page.getByText("Manual mode", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/must never be registered as Content ID references/),
+  ).toBeVisible();
+  const copyrightResults = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(
+    copyrightResults.violations.filter(
+      (violation) =>
+        violation.impact === "serious" || violation.impact === "critical",
+    ),
+  ).toEqual([]);
   for (const path of ["/team", "/admin"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/access-denied$/);
@@ -362,6 +379,7 @@ test("User lands in Library and cannot reach privileged routes", async ({
       "Submissions",
       "Upload",
       "Review Queue",
+      "Copyright",
       "Demand Sheet",
       "Team",
       "Admin",
@@ -371,6 +389,7 @@ test("User lands in Library and cannot reach privileged routes", async ({
     "/dashboard",
     "/upload",
     "/review",
+    "/copyright",
     "/demands",
     "/team",
     "/admin",
@@ -388,6 +407,7 @@ test("database-backed domain states remain responsive and accessible", async ({
     ["/library", /No published tracks yet|Published tracks/],
     ["/my-uploads", /No submissions yet|Upload submissions/],
     ["/review", /Nothing waiting for review|Reviewable submissions/],
+    ["/copyright", /Current checks/],
   ] as const;
 
   for (const viewport of [
@@ -414,7 +434,7 @@ test("database-backed domain states remain responsive and accessible", async ({
   });
   await expect(
     page.getByRole("heading", {
-      name: /Nothing waiting for review|Reviewable submissions/,
+      name: "Current checks",
     }),
   ).toBeVisible();
   const results = await new AxeBuilder({ page })
@@ -478,6 +498,7 @@ test("role changes revoke the old session and apply new navigation after sign in
         "Library",
         "My Uploads",
         "Review Queue",
+        "Copyright",
         "Upload",
         "Demand Sheet",
       ],

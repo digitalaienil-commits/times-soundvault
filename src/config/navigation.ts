@@ -1,5 +1,6 @@
 import {
   ClipboardCheck,
+  Copyright,
   FileAudio,
   ListMusic,
   LayoutDashboard,
@@ -43,6 +44,12 @@ export const navigationItems = [
     roles: ["admin", "coordinator"],
   },
   {
+    href: "/copyright",
+    label: "Copyright",
+    icon: Copyright,
+    roles: ["admin", "coordinator"],
+  },
+  {
     href: "/upload",
     label: "Upload",
     icon: UploadCloud,
@@ -74,6 +81,7 @@ export const workspaceRoutes = [
   "/my-uploads",
   "/upload",
   "/review",
+  "/copyright",
   "/demands",
   "/team",
   "/admin",

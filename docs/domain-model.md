@@ -17,6 +17,10 @@ workflow.submission --- optional ---> workflow.submission_batch
 workflow.submission_revision (immutable after submission)
         |                   |
         |                   +----> rights.rights_declaration
+        |                   +----> rights.copyright_check (historical rounds)
+        |                                |----> eligibility reviews
+        |                                |----> immutable observations
+        |                                +----> manual batch items
         v
 catalog.audio_asset (one master + many stems per revision)
         |
@@ -47,6 +51,10 @@ A Submission belongs to an explicit owner and references one Track. A batch can
 group future bulk intake, but is optional. Every resubmission creates the next
 Revision number. Submitted metadata snapshots remain intact; a later Revision
 coexists with, then supersedes, the earlier submitted snapshot.
+
+Each submitted current Revision receives one current copyright check. A recheck
+creates another numbered round and preserves the prior check and observations.
+Copyright status never changes the Submission lifecycle automatically.
 
 ## Audio Asset and Audio File
 

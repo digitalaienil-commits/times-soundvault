@@ -56,6 +56,19 @@ Provider secrets, OAuth tokens, password hashes and session tokens never cross
 the server boundary. Future audio/provider SDKs remain behind server adapters;
 they are not imported into UI modules.
 
+## Copyright boundary
+
+`src/lib/copyright` owns manual batch policy, deterministic manifests, private
+artifacts, the disabled provider contract and durable job processing. Copyright
+checks live in `rights` and remain independent of Submission, technical/Cyanite
+and publication state. The worker materializes verified Masters through the
+storage adapter and passes explicit arguments to FFmpeg without a shell. Route
+Handlers authorize before opening a private artifact and stream it with
+`private, no-store` caching.
+
+The `manual_youtube` provider reports `connected: false` and performs no network
+operation. UI modules never import a Google or YouTube SDK.
+
 ## Domain boundary
 
 Section 3 owns four application schemas without changing the authentication
@@ -64,7 +77,8 @@ boundary:
 - `catalog`: Compositions, Tracks, recording versions, assets, files, canonical
   metadata and taxonomy;
 - `workflow`: Submission batches, Submissions, immutable Revisions and events;
-- `rights`: revision-specific Producer rights declarations;
+- `rights`: revision-specific Producer declarations, copyright checks,
+  eligibility reviews, observations, manual batches, reference links and jobs;
 - `system`: checksummed domain migration history.
 
 Server-only repositories live below `src/lib/domain` and accept an injected
