@@ -15,6 +15,9 @@ const PAGE_LABELS: Record<string, string> = {
 
 export function CurrentPageContext() {
   const pathname = usePathname();
+  const label = pathname.startsWith("/library/")
+    ? "Published Track"
+    : (PAGE_LABELS[pathname] ?? "Workspace");
 
   return (
     <div className="hidden min-w-0 items-center gap-2 text-sm sm:flex">
@@ -22,9 +25,7 @@ export function CurrentPageContext() {
       <span aria-hidden="true" className="text-border">
         /
       </span>
-      <span className="truncate font-medium text-foreground">
-        {PAGE_LABELS[pathname] ?? "Workspace"}
-      </span>
+      <span className="truncate font-medium text-foreground">{label}</span>
     </div>
   );
 }

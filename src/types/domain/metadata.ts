@@ -6,6 +6,15 @@ export const VOCAL_STATES = [
 ] as const;
 export type VocalState = (typeof VOCAL_STATES)[number];
 
+export const ENDING_TYPES = [
+  "clean_stop",
+  "final_hit",
+  "fade",
+  "open",
+  "unknown",
+] as const;
+export type EndingType = (typeof ENDING_TYPES)[number];
+
 export const TAXONOMY_CATEGORIES = [
   "genre",
   "subgenre",
@@ -67,6 +76,9 @@ export interface TrackMetadataDto {
   languageCode: string | null;
   era: string | null;
   descriptionCaption: string | null;
+  underDialogue: boolean | null;
+  loopable: boolean | null;
+  endingType: EndingType | null;
   metadataVersion: number;
   updatedAt: string;
 }

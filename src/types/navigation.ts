@@ -18,6 +18,7 @@ export type WorkspaceRouteFamily =
   | "/upload/[batchId]"
   | "/review/[submissionId]"
   | "/submissions/[submissionId]"
+  | "/library/[trackId]"
   | "/copyright/batches/[batchId]";
 
 export interface NavigationItem {

@@ -121,6 +121,9 @@ pnpm copyright:once      # process one copyright job
 pnpm copyright:reconcile # create missing checks and recover stale jobs
 pnpm copyright:cleanup   # remove expired private test artifacts
 pnpm copyright:status    # safe database counts; no YouTube request
+pnpm catalog:search:status
+pnpm catalog:search:rebuild -- --dry-run
+pnpm catalog:search:benchmark # rollback-only 10k plan check
 pnpm dev
 pnpm format
 pnpm format:check
@@ -156,6 +159,10 @@ and refuses changed applied migrations. See
 [docs/domain-model.md](docs/domain-model.md),
 [docs/catalog-metadata.md](docs/catalog-metadata.md) and
 [docs/submission-lifecycle.md](docs/submission-lifecycle.md).
+
+Section 9 uses a PostgreSQL-only, trigger-maintained search projection for
+published canonical Tracks. See
+[docs/searchable-published-library.md](docs/searchable-published-library.md).
 
 Section 4 storage is behind a server-only adapter. Local development writes
 generated object keys beneath an ignored private root, verifies exact size and

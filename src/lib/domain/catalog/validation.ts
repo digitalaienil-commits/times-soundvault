@@ -7,6 +7,7 @@ import {
 } from "@/types/domain/catalog";
 import {
   COPYRIGHT_STATUSES,
+  ENDING_TYPES,
   METADATA_ANALYSIS_STATUSES,
   VOCAL_STATES,
 } from "@/types/domain/metadata";
@@ -15,6 +16,7 @@ export const assetKindSchema = z.enum(ASSET_KINDS);
 export const versionTypeSchema = z.enum(VERSION_TYPES);
 export const publicationStatusSchema = z.enum(PUBLICATION_STATUSES);
 export const vocalStateSchema = z.enum(VOCAL_STATES);
+export const endingTypeSchema = z.enum(ENDING_TYPES);
 export const metadataAnalysisStatusSchema = z.enum(METADATA_ANALYSIS_STATUSES);
 export const copyrightStatusSchema = z.enum(COPYRIGHT_STATUSES);
 
@@ -24,6 +26,9 @@ export const canonicalMetadataInputSchema = z.object({
   valence: z.number().min(0).max(1).nullable().optional(),
   arousal: z.number().min(0).max(1).nullable().optional(),
   vocalState: vocalStateSchema.optional(),
+  underDialogue: z.boolean().nullable().optional(),
+  loopable: z.boolean().nullable().optional(),
+  endingType: endingTypeSchema.nullable().optional(),
 });
 
 export function normalizeIsrc(value: string): string {

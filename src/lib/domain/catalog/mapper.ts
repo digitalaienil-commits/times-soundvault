@@ -11,7 +11,7 @@ import type {
   AudioFileDto,
   TrackDto,
 } from "@/types/domain/catalog";
-import { VOCAL_STATES } from "@/types/domain/metadata";
+import { ENDING_TYPES, VOCAL_STATES } from "@/types/domain/metadata";
 import type { TrackMetadataDto } from "@/types/domain/metadata";
 
 import {
@@ -144,12 +144,18 @@ export interface TrackMetadataRow {
   language_code: string | null;
   era: string | null;
   description_caption: string | null;
+  under_dialogue: boolean | null;
+  loopable: boolean | null;
+  ending_type: string | null;
   metadata_version: number | string;
   updated_at: Date | string;
 }
 
 export function mapTrackMetadataRow(row: TrackMetadataRow): TrackMetadataDto {
-  if (!includes(VOCAL_STATES, row.vocal_state)) {
+  if (
+    !includes(VOCAL_STATES, row.vocal_state) ||
+    (row.ending_type !== null && !includes(ENDING_TYPES, row.ending_type))
+  ) {
     throw new DomainRecordError(
       "Track metadata contains an invalid vocal state",
     );
@@ -167,6 +173,9 @@ export function mapTrackMetadataRow(row: TrackMetadataRow): TrackMetadataDto {
     languageCode: row.language_code,
     era: row.era,
     descriptionCaption: row.description_caption,
+    underDialogue: row.under_dialogue,
+    loopable: row.loopable,
+    endingType: row.ending_type,
     metadataVersion: toNumber(row.metadata_version),
     updatedAt: toIsoString(row.updated_at),
   };

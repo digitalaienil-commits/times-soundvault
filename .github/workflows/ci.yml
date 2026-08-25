@@ -78,6 +78,7 @@ jobs:
           docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
           pnpm auth:migrate
           pnpm domain:migrate
+          pnpm catalog:search:status
           pnpm auth:seed-local
 
       - name: Check formatting

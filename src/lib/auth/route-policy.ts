@@ -21,6 +21,7 @@ export const ROUTE_FAMILY_PERMISSIONS = {
   "/upload/[batchId]": "submission.create",
   "/review/[submissionId]": "submission.review",
   "/submissions/[submissionId]": "submission.readOwn",
+  "/library/[trackId]": "library.read",
   "/copyright/batches/[batchId]": "copyright.readAll",
 } as const satisfies Record<WorkspaceRouteFamily, Permission>;
 
@@ -36,6 +37,10 @@ const DYNAMIC_ROUTE_FAMILIES = [
   {
     family: "/submissions/[submissionId]",
     pattern: /^\/submissions\/([^/]+)$/,
+  },
+  {
+    family: "/library/[trackId]",
+    pattern: /^\/library\/([^/]+)$/,
   },
   {
     family: "/copyright/batches/[batchId]",
