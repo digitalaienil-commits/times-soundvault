@@ -9,6 +9,7 @@ import {
   listSubmissionEvents,
   listUploadWorkspaceSubmissions,
   loadWorkspaceSubmission,
+  loadRevisionUploadContext,
 } from "./repository";
 
 export function getUploadWorkspaceSubmissions(user: CurrentUser) {
@@ -32,4 +33,11 @@ export function getUploadBatchSubmissions(batchId: string, user: CurrentUser) {
 
 export function getUploadSubmissionEvents(submissionId: string) {
   return listSubmissionEvents(getDatabase(), submissionId);
+}
+
+export function getRevisionUploadContext(
+  submissionId: string,
+  user: CurrentUser,
+) {
+  return loadRevisionUploadContext(getDatabase(), submissionId, user);
 }

@@ -85,3 +85,10 @@ metadata draft, controlled-term selections, checklist, append-only notes and
 events. These proposed values never update `catalog.track_metadata`, accept a
 taxonomy assignment or change publication state. Section 8 consumes the locked
 `ReviewDecisionPacket` and performs any approved promotion transactionally.
+
+Section 8 adds append-only `workflow.review_decision` primary decisions and
+Admin resolutions, Producer-visible `workflow.change_request` records with
+structured items, and append-only `catalog.track_publication_event` history.
+The bounded decision snapshot excludes storage and provider secrets.
+`decisioned` is terminal for that reviewed Revision; `superseded` continues to
+mean a newer Revision replaced it.

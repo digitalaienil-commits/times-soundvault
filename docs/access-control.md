@@ -42,3 +42,11 @@ upload checks.
 Access Denied is for active identities lacking a capability. Access Not
 Assigned is for identities without a valid active assignment. Neither page
 exposes internal permission identifiers or team data.
+
+Section 8 checks capabilities in every Server Action and repository mutation.
+Admin owns every decision capability. Coordinator has approve, bulk approve,
+request changes, recommend rejection and publish, but not confirm rejection or
+unpublish. Producer sees only Producer-visible copy for owned submissions and
+may start a requested Revision. User receives no review or mutation surface.
+Row locks, current-Revision/status checks, optimistic versions, unique primary
+decisions and append-only triggers enforce the boundary independently of UI.

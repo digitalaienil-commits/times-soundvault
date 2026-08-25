@@ -44,3 +44,12 @@ pnpm uploads:cleanup
 
 Cleanup is a dry run unless `--confirm` is supplied. It is restricted to
 cancelled or expired sessions on draft submissions.
+
+## Requested revisions
+
+An open change request links the owning Producer to
+`/upload?submissionId=…`. The server verifies ownership and
+`changes_requested`, prefills safe metadata and rights, and requires a new
+Master rather than reusing a private storage object. Successful Revision N+1
+submission supersedes the earlier submitted Revision, resolves the request,
+emits `resubmitted`, and enters the existing processing workflow.

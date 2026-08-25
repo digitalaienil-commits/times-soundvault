@@ -113,12 +113,19 @@ export const trackPackageDraftSchema = z.object({
   rights: rightsDraftSchema,
 });
 
-export const createUploadBatchSchema = z.object({
-  idempotencyKey: z.string().trim().min(8).max(200),
-  label: safeText(300).optional(),
-  acknowledgementAccepted: z.boolean(),
-  packages: z.array(trackPackageDraftSchema).min(1),
-});
+export const createUploadBatchSchema = z
+  .object({
+    idempotencyKey: z.string().trim().min(8).max(200),
+    revisionSubmissionId: z.uuid().optional(),
+    label: safeText(300).optional(),
+    acknowledgementAccepted: z.boolean(),
+    packages: z.array(trackPackageDraftSchema).min(1),
+  })
+  .refine(
+    ({ revisionSubmissionId, packages }) =>
+      !revisionSubmissionId || packages.length === 1,
+    { message: "A revision upload must contain exactly one Track package" },
+  );
 
 export function validateUploadBatchLimits(
   input: z.infer<typeof createUploadBatchSchema>,

@@ -489,7 +489,7 @@ export async function loadReviewAggregate(
     ? {
         id: base.review_case_id,
         status: base.review_status as
-          "in_progress" | "ready_for_decision" | "superseded",
+          "in_progress" | "ready_for_decision" | "decisioned" | "superseded",
         assignedToUserId: base.assigned_to_user_id,
         assignedToName: base.assigned_to_name,
         rowVersion: Number(base.row_version),
@@ -735,7 +735,8 @@ async function lockEditableCase(
     throw new ReviewRepositoryError("CONFLICT", REVIEW_CONFLICT_MESSAGE);
   if (
     !canEditReview(actor, {
-      status: row.status as "in_progress" | "ready_for_decision" | "superseded",
+      status: row.status as
+        "in_progress" | "ready_for_decision" | "decisioned" | "superseded",
       assignedToUserId: row.assigned_to_user_id,
     })
   )

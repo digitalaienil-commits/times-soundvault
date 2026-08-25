@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { UploadSubmissionDetail } from "@/features/uploads/components/submission-detail";
 import { ProcessingAnalysis } from "@/features/processing/components/processing-analysis";
 import { CopyrightSummary } from "@/features/copyright/components/copyright-summary";
+import { SubmissionDecisionSummaryPanel } from "@/features/decisions/components/submission-decision-summary";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
 import { hasPermission } from "@/lib/auth/permissions";
 import { getRevisionRightsDeclaration } from "@/lib/domain/rights/rights";
@@ -19,6 +20,7 @@ import {
 import { getDatabase } from "@/lib/database/database";
 import { getCopyrightSummary } from "@/lib/copyright/repository";
 import { loadProcessingAnalysis } from "@/lib/processing/repository";
+import { getSubmissionDecisionSummary } from "@/lib/decisions/decisions";
 
 export const metadata: Metadata = { title: "Submission Details" };
 
@@ -37,17 +39,22 @@ export default async function SubmissionDetailPage({
     user,
   );
   if (!submission) notFound();
-  const [rights, events, processing, copyright] = await Promise.all([
-    getRevisionRightsDeclaration(submission.revisionId),
-    getUploadSubmissionEvents(submission.id),
-    loadProcessingAnalysis(getDatabase(), submission.revisionId),
-    getCopyrightSummary(
-      getDatabase(),
-      submission.revisionId,
-      submission.ownerUserId,
-      user,
-    ),
-  ]);
+  const [rights, events, processing, copyright, decisionSummary] =
+    await Promise.all([
+      getRevisionRightsDeclaration(submission.revisionId),
+      getUploadSubmissionEvents(submission.id),
+      loadProcessingAnalysis(getDatabase(), submission.revisionId),
+      getCopyrightSummary(
+        getDatabase(),
+        submission.revisionId,
+        submission.ownerUserId,
+        user,
+      ),
+      getSubmissionDecisionSummary(
+        submission.id,
+        hasPermission(user.role, "submission.review"),
+      ),
+    ]);
   return (
     <>
       <PageHeader
@@ -80,6 +87,18 @@ export default async function SubmissionDetailPage({
       <div className="mt-6">
         <CopyrightSummary summary={copyright} />
       </div>
+      {decisionSummary ? (
+        <SubmissionDecisionSummaryPanel
+          submissionId={submission.id}
+          submissionStatus={submission.status}
+          summary={decisionSummary}
+          user={user}
+          canRevise={
+            submission.ownerUserId === user.id &&
+            hasPermission(user.role, "submission.updateOwn")
+          }
+        />
+      ) : null}
     </>
   );
 }

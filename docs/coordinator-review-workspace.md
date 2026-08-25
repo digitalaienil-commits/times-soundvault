@@ -68,3 +68,16 @@ Migration `0005` seeds only the product-confirmed Section 4 `format` and
 `use_case` values with stable migration-owned UUIDs. It deliberately does not
 invent genre, mood or instrument vocabulary. Selecting a term records a review
 decision; the underlying Producer or AI assignment remains unchanged.
+
+## Locked decision handoff
+
+Ready for Decision exposes exactly Approve, Request Changes and Recommend
+Rejection. Each action re-reads the authoritative packet under row locks and
+rejects stale versions with: “This review changed before the decision
+completed. Refresh and try again.”
+
+Attention items stay visible and require explicit acknowledgement plus a
+meaningful approval note. Approval moves the Review Case to `decisioned` and
+removes it from the active queue without publishing. Coordinator can recommend
+rejection, while only Admin can confirm final rejection or return it as a
+structured change request.

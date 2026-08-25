@@ -43,3 +43,19 @@ completed, failed, cancelled or expired. A draft can be submitted only when it
 has exactly one Master, every registered Audio File is available, and the
 current Revision has the explicit internal-submission acknowledgement.
 Cancellation and cleanup never delete submitted content.
+
+## Section 8 decisions
+
+`in_review` reaches exactly one primary outcome for its current Review Case:
+
+- `approve` → Submission `approved`, Revision `accepted`, Review Case
+  `decisioned`; Track stays `unpublished`;
+- `request_changes` → `changes_requested`; successful immutable Revision N+1
+  submission resolves the request and returns to `submitted` processing;
+- `recommend_reject` → `rejection_recommended`, which is pending rather than
+  final. Admin resolves it with `confirm_reject` → `rejected`, or
+  `return_for_changes` → `changes_requested`.
+
+Publication is an independent Track axis:
+`unpublished → published → withdrawn → published`. It never changes the
+approved Submission status and every transition has an append-only event.

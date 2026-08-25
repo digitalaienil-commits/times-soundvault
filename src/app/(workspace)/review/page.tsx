@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { ReviewQueue } from "@/features/review/components/review-queue";
+import { PublicationQueue } from "@/features/decisions/components/publication-queue";
+import { BulkApproval } from "@/features/decisions/components/bulk-approval";
 import { requireRouteAccess } from "@/lib/auth/current-user";
+import { hasPermission } from "@/lib/auth/permissions";
+import { getApprovedPublicationQueue } from "@/lib/decisions/decisions";
 import { getReviewQueue } from "@/lib/review/review";
 import { reviewQueueFiltersSchema } from "@/lib/review/validation";
 
@@ -23,7 +27,10 @@ export default async function ReviewPage({
       ]),
     ),
   );
-  const result = await getReviewQueue(user.id, filters);
+  const [result, publicationItems] = await Promise.all([
+    getReviewQueue(user.id, filters),
+    getApprovedPublicationQueue(),
+  ]);
   return (
     <>
       <PageHeader
@@ -31,6 +38,13 @@ export default async function ReviewPage({
         description="Review audio, metadata, technical quality, rights and copyright before preparing a locked decision handoff."
       />
       <ReviewQueue result={result} filters={filters} currentUserId={user.id} />
+      {hasPermission(user.role, "submission.bulkApprove") ? (
+        <BulkApproval items={result.items} />
+      ) : null}
+      <PublicationQueue
+        items={publicationItems}
+        canPublish={hasPermission(user.role, "submission.publish")}
+      />
     </>
   );
 }

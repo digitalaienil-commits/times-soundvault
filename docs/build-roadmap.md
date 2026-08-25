@@ -9,7 +9,7 @@ Status is marked complete only after the section’s required checks pass.
 5. Technical Processing & Cyanite Analysis — complete
 6. YouTube Copyright & Content ID Workflow — complete
 7. Coordinator Review Workspace — complete
-8. Approval, Changes, Rejection & Publishing — planned
+8. Approval, Changes, Rejection & Publishing — complete
 9. Searchable Published Library — planned
 10. Professional Player, Stems & Downloads — planned
 11. Demand Sheet — planned
@@ -26,3 +26,10 @@ Section 7 adds the server-filtered review queue, atomic assignment, secure
 review-only audio ranges, revision-bound Coordinator draft, controlled taxonomy
 decisions, append-only notes, human checklist and a locked Ready-for-Decision
 handoff. The Submission remains `in_review`; Section 8 is the next milestone.
+
+Section 8 adds append-only decisions, canonical promotion, structured change
+requests and immutable Revision N+1 resubmission, Admin-only final rejection,
+and a separate rights/copyright publication gate. Publish, withdraw and
+republish events are preserved. Bulk Approve and Bulk Publish are capped at 25
+and roll back as one transaction. Advanced search, player/download work and
+archive/delete remain later milestones.

@@ -12,6 +12,7 @@ import type {
   UploadSessionDto,
   UploadWorkspaceFile,
   UploadWorkspaceSubmission,
+  RevisionUploadContext,
 } from "@/types/uploads";
 
 import {
@@ -114,6 +115,7 @@ async function loadCreatedBatch(
      JOIN catalog.audio_asset asset ON asset.id = audio_file.audio_asset_id
      JOIN workflow.submission_revision revision ON revision.id = asset.submission_revision_id
      JOIN workflow.submission submission ON submission.id = revision.submission_id
+       AND submission.current_revision_id = revision.id
      WHERE submission.batch_id = $1
      ORDER BY submission.created_at, asset.sort_order, audio_file.created_at`,
     [batchId],
@@ -171,55 +173,106 @@ export async function createUploadDraftBatch(
         parsed.idempotencyKey,
       ],
     );
+    const revisionTarget = parsed.revisionSubmissionId
+      ? await client.query<
+          {
+            submission_id: string;
+            track_id: string;
+            owner_user_id: string;
+            status: string;
+            latest_revision_number: number;
+          } & QueryResultRow
+        >(
+          `SELECT id AS submission_id,track_id,owner_user_id,status,latest_revision_number
+           FROM workflow.submission WHERE id=$1 FOR UPDATE`,
+          [parsed.revisionSubmissionId],
+        )
+      : null;
+    const target = revisionTarget?.rows[0];
+    if (
+      parsed.revisionSubmissionId &&
+      (!target ||
+        target.owner_user_id !== user.id ||
+        target.status !== "changes_requested")
+    ) {
+      throw new UploadRepositoryError(
+        target ? "UPLOAD_CONFLICT" : "UPLOAD_NOT_FOUND",
+        "Only the owning Producer can upload a requested revision",
+      );
+    }
     const createdFiles: CreatedFileRecord[] = [];
     for (const packageInput of parsed.packages) {
-      const trackId = randomUUID();
-      const submissionId = randomUUID();
+      const trackId = target?.track_id ?? randomUUID();
+      const submissionId = target?.submission_id ?? randomUUID();
       const revisionId = randomUUID();
-      await client.query(
-        `INSERT INTO catalog.track
-           (id, asset_kind, title, version_type, created_by_user_id)
-         VALUES ($1, 'music', $2, 'original', $3)`,
-        [trackId, packageInput.workingTitle, user.id],
-      );
-      await client.query(
-        `INSERT INTO workflow.submission (
-           id, track_id, batch_id, owner_user_id, current_revision_id,
-           latest_revision_number, draft_idempotency_key
-         ) VALUES ($1, $2, $3, $4, $5, 1, $6)`,
-        [
-          submissionId,
-          trackId,
-          createdBatchId,
-          user.id,
-          revisionId,
-          `${parsed.idempotencyKey}:${packageInput.clientId}`,
-        ],
-      );
+      const revisionNumber = target ? target.latest_revision_number + 1 : 1;
+      if (!target) {
+        await client.query(
+          `INSERT INTO catalog.track
+             (id, asset_kind, title, version_type, created_by_user_id)
+           VALUES ($1, 'music', $2, 'original', $3)`,
+          [trackId, packageInput.workingTitle, user.id],
+        );
+        await client.query(
+          `INSERT INTO workflow.submission (
+             id, track_id, batch_id, owner_user_id, current_revision_id,
+             latest_revision_number, draft_idempotency_key
+           ) VALUES ($1, $2, $3, $4, $5, 1, $6)`,
+          [
+            submissionId,
+            trackId,
+            createdBatchId,
+            user.id,
+            revisionId,
+            `${parsed.idempotencyKey}:${packageInput.clientId}`,
+          ],
+        );
+      }
       await client.query(
         `INSERT INTO workflow.submission_revision (
            id, submission_id, revision_number, created_by_user_id,
            producer_metadata, embedded_metadata, source_notes
-         ) VALUES ($1, $2, 1, $3, $4, '{}'::jsonb, $5)`,
+         ) VALUES ($1, $2, $3, $4, $5, '{}'::jsonb, $6)`,
         [
           revisionId,
           submissionId,
+          revisionNumber,
           user.id,
           packageInput.producerMetadata,
           packageInput.producerMetadata.producerNotes || null,
         ],
       );
+      if (target) {
+        await client.query(
+          `UPDATE workflow.submission
+           SET current_revision_id=$2,latest_revision_number=$3,batch_id=$4,
+               draft_idempotency_key=$5,row_version=row_version+1
+           WHERE id=$1`,
+          [
+            submissionId,
+            revisionId,
+            revisionNumber,
+            createdBatchId,
+            `${parsed.idempotencyKey}:${packageInput.clientId}`,
+          ],
+        );
+      }
       await client.query(
         `INSERT INTO workflow.submission_event (
            id, submission_id, submission_revision_id, actor_user_id,
            event_type, to_status, event_metadata
-         ) VALUES ($1, $2, $3, $4, 'created', 'draft', $5)`,
+         ) VALUES ($1, $2, $3, $4, 'created', $5, $6)`,
         [
           randomUUID(),
           submissionId,
           revisionId,
           user.id,
-          { batchId: createdBatchId },
+          target ? null : "draft",
+          {
+            batchId: createdBatchId,
+            revisionNumber,
+            requestedRevision: Boolean(target),
+          },
         ],
       );
       await client.query(
@@ -314,7 +367,7 @@ export async function createUploadDraftBatch(
         createdFiles.push({
           clientId: file.clientId,
           submissionId,
-          revisionNumber: 1,
+          revisionNumber,
           audioFileId,
           sessionId,
           extension: file.extension,
@@ -650,13 +703,17 @@ export async function submitCompletedDraft(
         "Submission was not found",
       );
     assertCanMutateUploadSubmission(user, submission.owner_user_id);
-    if (submission.status !== "draft") {
+    if (
+      submission.status !== "draft" &&
+      submission.status !== "changes_requested"
+    ) {
       if (submission.status === "submitted") return;
       throw new UploadRepositoryError(
         "UPLOAD_CONFLICT",
-        "Only a draft can be submitted",
+        "Only a draft or requested revision can be submitted",
       );
     }
+    const previousStatus = submission.status;
     const readiness = await client.query<
       {
         masters: string;
@@ -698,16 +755,37 @@ export async function submitCompletedDraft(
     await client.query(
       `UPDATE workflow.submission
        SET status = 'submitted', submitted_at = now(), row_version = row_version + 1
-       WHERE id = $1 AND status = 'draft'`,
-      [submissionId],
+       WHERE id = $1 AND status = $2`,
+      [submissionId, previousStatus],
     );
     await client.query(
       `INSERT INTO workflow.submission_event (
          id, submission_id, submission_revision_id, actor_user_id,
          event_type, from_status, to_status
-       ) VALUES ($1,$2,$3,$4,'submitted','draft','submitted')`,
-      [randomUUID(), submissionId, submission.current_revision_id, user.id],
+       ) VALUES ($1,$2,$3,$4,$5,$6,'submitted')`,
+      [
+        randomUUID(),
+        submissionId,
+        submission.current_revision_id,
+        user.id,
+        previousStatus === "changes_requested" ? "resubmitted" : "submitted",
+        previousStatus,
+      ],
     );
+    if (previousStatus === "changes_requested") {
+      await client.query(
+        `UPDATE workflow.submission_revision
+         SET revision_status='superseded'
+         WHERE submission_id=$1 AND id<>$2 AND revision_status='submitted'`,
+        [submissionId, submission.current_revision_id],
+      );
+      await client.query(
+        `UPDATE workflow.change_request
+         SET status='resolved',resolved_by_revision_id=$2,resolved_at=now()
+         WHERE submission_id=$1 AND status='open'`,
+        [submissionId, submission.current_revision_id],
+      );
+    }
     await client.query(
       `INSERT INTO analysis.revision_analysis
          (id, submission_revision_id, track_id, overall_status)
@@ -799,10 +877,10 @@ export async function acknowledgeUploadRights(
         "Submission was not found",
       );
     assertCanMutateUploadSubmission(user, submission.owner_user_id);
-    if (submission.status !== "draft")
+    if (!["draft", "changes_requested"].includes(submission.status))
       throw new UploadRepositoryError(
         "UPLOAD_CONFLICT",
-        "Only draft uploads can be acknowledged",
+        "Only draft uploads or requested revisions can be acknowledged",
       );
     await client.query(
       `INSERT INTO rights.submission_acknowledgement (
@@ -827,7 +905,8 @@ export async function updateDraftProducerMetadata(
 ): Promise<void> {
   const parsed = producerMetadataSchema.parse(metadata);
   const result = await pool.query<{ owner_user_id: string } & QueryResultRow>(
-    `SELECT owner_user_id FROM workflow.submission WHERE id = $1 AND status = 'draft' LIMIT 1`,
+    `SELECT owner_user_id FROM workflow.submission
+     WHERE id = $1 AND status IN ('draft','changes_requested') LIMIT 1`,
     [submissionId],
   );
   const submission = result.rows[0];
@@ -844,7 +923,7 @@ export async function updateDraftProducerMetadata(
        FROM workflow.submission submission
        WHERE submission.id = $1
          AND revision.id = submission.current_revision_id
-         AND submission.status = 'draft'
+         AND submission.status IN ('draft','changes_requested')
          AND revision.revision_status = 'draft'`,
       [submissionId, parsed, parsed.producerNotes || null],
     );
@@ -852,7 +931,8 @@ export async function updateDraftProducerMetadata(
       `UPDATE catalog.track track
        SET title = $2, description = $3, row_version = row_version + 1
        FROM workflow.submission submission
-       WHERE submission.id = $1 AND track.id = submission.track_id AND submission.status = 'draft'`,
+       WHERE submission.id = $1 AND track.id = submission.track_id
+         AND submission.status IN ('draft','changes_requested')`,
       [submissionId, parsed.workingTitle, parsed.description || null],
     );
   });
@@ -869,7 +949,7 @@ export async function listUploadWorkspaceSubmissions(
       batch_label: string | null;
       owner_user_id: string;
       owner_name: string;
-      status: string;
+      status: UploadWorkspaceSubmission["status"];
       revision_id: string;
       revision_number: number;
       title: string;
@@ -913,7 +993,7 @@ export async function loadWorkspaceSubmission(
       batch_label: string | null;
       owner_user_id: string;
       owner_name: string;
-      status: string;
+      status: UploadWorkspaceSubmission["status"];
       revision_id: string;
       revision_number: number;
       title: string;
@@ -1013,6 +1093,64 @@ export async function loadWorkspaceSubmission(
   };
 }
 
+export async function loadRevisionUploadContext(
+  database: Queryable,
+  submissionId: string,
+  user: CurrentUser,
+): Promise<RevisionUploadContext | null> {
+  const result = await database.query<
+    {
+      submission_id: string;
+      latest_revision_number: number;
+      title: string;
+      producer_metadata: RevisionUploadContext["producerMetadata"];
+      rights: RevisionUploadContext["rights"];
+    } & QueryResultRow
+  >(
+    `SELECT submission.id AS submission_id,submission.latest_revision_number,
+            COALESCE(NULLIF(revision.producer_metadata->>'workingTitle',''),track.title,'Untitled track') AS title,
+            jsonb_strip_nulls(jsonb_build_object(
+              'workingTitle',COALESCE(NULLIF(revision.producer_metadata->>'workingTitle',''),track.title,'Untitled track'),
+              'description',revision.producer_metadata->>'description',
+              'producerNotes',revision.producer_metadata->>'producerNotes',
+              'internalSourceReference',revision.producer_metadata->>'internalSourceReference',
+              'format',revision.producer_metadata->>'format',
+              'editorialUses',revision.producer_metadata->'editorialUses',
+              'underDialogue',revision.producer_metadata->>'underDialogue',
+              'loopable',revision.producer_metadata->>'loopable',
+              'endingType',revision.producer_metadata->>'endingType')) AS producer_metadata,
+            jsonb_strip_nulls(jsonb_build_object(
+              'masterRightsBasis',rights.master_rights_basis,
+              'masterOwnerName',rights.master_owner_name,
+              'compositionRightsBasis',rights.composition_rights_basis,
+              'compositionOwnerName',rights.composition_owner_name,
+              'publisherName',rights.publisher_name,
+              'territory',rights.territory,
+              'validFrom',rights.valid_from,
+              'validUntil',rights.valid_until,
+              'sourceReference',rights.source_reference,
+              'notes',rights.notes,
+              'oneStopClearance',rights.one_stop_clearance,
+              'contentIdEligibility',rights.content_id_eligibility)) AS rights
+     FROM workflow.submission submission
+     JOIN workflow.submission_revision revision ON revision.id=submission.current_revision_id
+     JOIN catalog.track track ON track.id=submission.track_id
+     JOIN rights.rights_declaration rights ON rights.submission_revision_id=revision.id
+     WHERE submission.id=$1 AND submission.owner_user_id=$2
+       AND submission.status='changes_requested'`,
+    [submissionId, user.id],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+  return {
+    submissionId: row.submission_id,
+    nextRevisionNumber: row.latest_revision_number + 1,
+    title: row.title,
+    producerMetadata: row.producer_metadata,
+    rights: row.rights,
+  };
+}
+
 export async function listResumableBatches(
   database: Queryable,
   user: CurrentUser,
@@ -1040,7 +1178,8 @@ export async function listResumableBatches(
      JOIN catalog.audio_asset asset ON asset.submission_revision_id = revision.id
      JOIN catalog.audio_file audio_file ON audio_file.audio_asset_id = asset.id
      JOIN workflow.upload_session upload ON upload.audio_file_id = audio_file.id
-     WHERE batch.created_by_user_id = $1 AND submission.status = 'draft'
+     WHERE batch.created_by_user_id = $1
+       AND submission.status IN ('draft','changes_requested')
      GROUP BY batch.id
      ORDER BY batch.updated_at DESC`,
     [user.id],
@@ -1122,7 +1261,7 @@ export async function listCleanupCandidates(database: Queryable): Promise<
      JOIN workflow.submission_revision revision ON revision.id = asset.submission_revision_id
      JOIN workflow.submission submission ON submission.id = revision.submission_id
      WHERE upload.status IN ('cancelled', 'expired')
-       AND submission.status = 'draft'
+       AND submission.status IN ('draft','changes_requested')
      ORDER BY upload.updated_at`,
   );
   return result.rows.map((row) => ({

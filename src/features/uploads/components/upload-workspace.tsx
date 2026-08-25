@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import type {
   CreatedUploadBatch,
   PublicUploadConfig,
+  RevisionUploadContext,
   StemType,
 } from "@/types/uploads";
 import { EDITORIAL_USES, NEWS_FORMATS, STEM_TYPES } from "@/types/uploads";
@@ -74,23 +75,45 @@ interface TrackGroupState {
   compositionRightsBasis:
     "owned" | "exclusive_license" | "non_exclusive_license" | "unknown";
   rightsNotes: string;
+  masterOwnerName: string;
+  compositionOwnerName: string;
+  publisherName: string;
+  territory: string;
+  validFrom: string;
+  validUntil: string;
+  oneStopClearance?: boolean;
+  contentIdEligibility: "unknown" | "eligible" | "ineligible" | "needs_review";
 }
 
-function newGroup(id: string, title: string): TrackGroupState {
+function newGroup(
+  id: string,
+  title: string,
+  revision?: RevisionUploadContext,
+): TrackGroupState {
+  const metadata = revision?.producerMetadata;
+  const rights = revision?.rights;
   return {
     id,
     title,
-    description: "",
-    producerNotes: "",
-    sourceReference: "",
-    format: "",
-    editorialUses: [],
-    underDialogue: "unknown",
-    loopable: "unknown",
-    endingType: "unknown",
-    masterRightsBasis: "unknown",
-    compositionRightsBasis: "unknown",
-    rightsNotes: "",
+    description: metadata?.description ?? "",
+    producerNotes: metadata?.producerNotes ?? "",
+    sourceReference: metadata?.internalSourceReference ?? "",
+    format: metadata?.format ?? "",
+    editorialUses: metadata?.editorialUses ?? [],
+    underDialogue: metadata?.underDialogue ?? "unknown",
+    loopable: metadata?.loopable ?? "unknown",
+    endingType: metadata?.endingType ?? "unknown",
+    masterRightsBasis: rights?.masterRightsBasis ?? "unknown",
+    compositionRightsBasis: rights?.compositionRightsBasis ?? "unknown",
+    rightsNotes: rights?.notes ?? "",
+    masterOwnerName: rights?.masterOwnerName ?? "",
+    compositionOwnerName: rights?.compositionOwnerName ?? "",
+    publisherName: rights?.publisherName ?? "",
+    territory: rights?.territory ?? "",
+    validFrom: rights?.validFrom ?? "",
+    validUntil: rights?.validUntil ?? "",
+    oneStopClearance: rights?.oneStopClearance,
+    contentIdEligibility: rights?.contentIdEligibility ?? "unknown",
   };
 }
 
@@ -119,10 +142,20 @@ async function responseError(response: Response): Promise<string> {
   }
 }
 
-export function UploadWorkspace({ config }: { config: PublicUploadConfig }) {
+export function UploadWorkspace({
+  config,
+  revisionContext,
+}: {
+  config: PublicUploadConfig;
+  revisionContext?: RevisionUploadContext;
+}) {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<SelectedUploadFile[]>([]);
-  const [groups, setGroups] = useState<TrackGroupState[]>([]);
+  const [groups, setGroups] = useState<TrackGroupState[]>(
+    revisionContext
+      ? [newGroup("requested-revision", revisionContext.title, revisionContext)]
+      : [],
+  );
   const [acknowledged, setAcknowledged] = useState(false);
   const [createdBatch, setCreatedBatch] = useState<CreatedUploadBatch | null>(
     null,
@@ -197,9 +230,11 @@ export function UploadWorkspace({ config }: { config: PublicUploadConfig }) {
           size: file.size,
           type: file.type,
         });
-        const groupId = singleUnassigned
-          ? crypto.randomUUID()
-          : (suggestion.groupKey ?? "");
+        const groupId = revisionContext
+          ? "requested-revision"
+          : singleUnassigned
+            ? crypto.randomUUID()
+            : (suggestion.groupKey ?? "");
         if (
           groupId &&
           !groups.some((group) => group.id === groupId) &&
@@ -232,7 +267,7 @@ export function UploadWorkspace({ config }: { config: PublicUploadConfig }) {
         setGroups((current) => [...current, ...groupAdditions.values()]);
       setFiles((current) => [...current, ...additions]);
     },
-    [config, files, groups],
+    [config, files, groups, revisionContext],
   );
 
   const groupingErrors = useMemo(() => {
@@ -264,6 +299,7 @@ export function UploadWorkspace({ config }: { config: PublicUploadConfig }) {
   const makePayload = useCallback(
     () => ({
       idempotencyKey: idempotencyKeyRef.current,
+      revisionSubmissionId: revisionContext?.submissionId,
       label:
         groups.length > 1
           ? `Bulk upload — ${groups.length} tracks`
@@ -303,13 +339,21 @@ export function UploadWorkspace({ config }: { config: PublicUploadConfig }) {
           },
           rights: {
             masterRightsBasis: group.masterRightsBasis,
+            masterOwnerName: group.masterOwnerName || undefined,
             compositionRightsBasis: group.compositionRightsBasis,
+            compositionOwnerName: group.compositionOwnerName || undefined,
+            publisherName: group.publisherName || undefined,
+            territory: group.territory || undefined,
+            validFrom: group.validFrom || undefined,
+            validUntil: group.validUntil || undefined,
+            sourceReference: group.sourceReference || undefined,
             notes: group.rightsNotes || undefined,
-            contentIdEligibility: "unknown",
+            oneStopClearance: group.oneStopClearance,
+            contentIdEligibility: group.contentIdEligibility,
           },
         })),
     }),
-    [acknowledged, files, groups],
+    [acknowledged, files, groups, revisionContext],
   );
 
   const saveDraft = useCallback(async (): Promise<CreatedUploadBatch> => {
@@ -575,6 +619,18 @@ export function UploadWorkspace({ config }: { config: PublicUploadConfig }) {
 
   return (
     <div className="mt-8 space-y-6">
+      {revisionContext ? (
+        <div className="rounded-xl border border-warning/40 bg-warning/5 p-4">
+          <p className="font-semibold">
+            Preparing Revision {revisionContext.nextRevisionNumber}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Safe metadata and rights values were carried forward. Select a new
+            Master and any replacement Stems; previous private files are not
+            reused.
+          </p>
+        </div>
+      ) : null}
       <UploadStepper currentStep={step} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <main className="min-w-0 rounded-xl border border-border bg-surface p-4 shadow-soft sm:p-6">

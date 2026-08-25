@@ -184,8 +184,8 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 
 - Google and Microsoft modes require real organization credentials and have not
   been live-tested by the repository test suite.
-- Section 8 business decisions, publication controls, professional
-  playback and catalog downloads remain planned work; no fake records are shown.
+- Professional playback and catalog downloads remain planned work; no fake
+  records are shown.
 - YouTube Content ID/CMS automation is not connected or live-tested. Section 6
   uses a manual operational workflow and is API-ready.
 - The OneDrive adapter is covered with mocked HTTP tests. Live Microsoft Graph
@@ -201,5 +201,10 @@ a locked Ready-for-Decision handoff. It performs no Section 8 business action.
 See [the review workspace guide](docs/coordinator-review-workspace.md) and
 [metadata provenance guide](docs/review-metadata-provenance.md).
 
-The next milestone is **Section 8: Approval, Changes, Rejection & Publishing**.
-The complete sequence is in [docs/build-roadmap.md](docs/build-roadmap.md).
+Section 8, **Approval, Changes, Rejection & Publishing**, is complete. Approval
+promotes the locked Coordinator Review Draft to canonical metadata but leaves
+the Track unpublished. A second governed action evaluates metadata, rights and
+copyright before Library visibility changes. Coordinator can recommend
+rejection but only Admin can confirm final rejection. No external provider API
+is required for Section 8. See [the decision workflow](docs/decision-workflow.md)
+and [publication governance](docs/publication-governance.md).

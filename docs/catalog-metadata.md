@@ -38,3 +38,15 @@ be ISWC, legacy or custom. Track identifiers can be ISRC, legacy or custom.
 ISRC input is uppercased and stripped of presentation spaces/hyphens, then
 validated as a 12-character recording code. ISWC is optional. Neither external
 identifier is fabricated or used as a database primary key.
+
+## Canonical promotion
+
+The locked Coordinator Review Draft remains non-canonical until approval. The
+approval transaction updates Track title/description, upserts canonical scalar
+metadata including under-dialogue, loopable and ending type, increments
+`metadata_version`, and accepts the selected active terms for that Revision.
+
+Prior accepted Coordinator assignments become rejected; Producer, embedded and
+AI source assignments stay unchanged. The scalar Format must match exactly one
+selected active Format term and at least one Use Case is required. Publication
+reads only this promoted canonical state.

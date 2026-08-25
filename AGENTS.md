@@ -8,8 +8,11 @@ everything. Music Producer manages owned submissions. Coordinator reviews and
 prepares decision context. User only searches, listens, and downloads from the published
 Library. There is no Reviewer role.
 
-Section 7 never approves, requests changes, rejects, publishes or unpublishes.
-It prepares a revision-bound draft and checklist for the Section 8 decision.
+Section 7 prepares a revision-bound draft and checklist. Section 8 decisions
+are append-only: approval promotes that locked draft to canonical metadata,
+while publication remains a separate governed action. Coordinator may
+recommend rejection, but only the Admin capability may confirm final rejection.
+Never add a publication bypass.
 
 Navigation is not authorization. Every protected route and sensitive action
 checks permissions server-side. Roles are server-owned and may not be accepted

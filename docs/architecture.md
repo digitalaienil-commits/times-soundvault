@@ -125,3 +125,17 @@ Graph credentials or reusable provider URLs.
 `workflow.upload_session` is transfer state, while `catalog.audio_file` becomes
 available only after provider verification. Neither state implies technical
 analysis, copyright clearance, approval or publication.
+
+## Decision and publication boundary
+
+`src/lib/decisions` owns Section 8 transactions. It re-reads and locks the
+Review Case, Submission, current Revision and Track, validates `row_version`,
+and stores one append-only primary decision. Browser input never supplies
+canonical metadata or publication evidence.
+
+Approval promotes reviewed scalar fields and accepted taxonomy, accepts the
+current Revision and leaves the Track unpublished. A separate centralized gate
+evaluates canonical metadata, rights and the current copyright result before
+Library visibility changes. There is no force-publish path. Structured change
+requests hand off to the upload feature through route composition; features do
+not import one another and decision snapshots exclude provider/storage data.

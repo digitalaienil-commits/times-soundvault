@@ -3,6 +3,7 @@ import type { MetadataSourceKind, TaxonomyCategory } from "./domain/metadata";
 export const REVIEW_CASE_STATUSES = [
   "in_progress",
   "ready_for_decision",
+  "decisioned",
   "superseded",
 ] as const;
 export type ReviewCaseStatus = (typeof REVIEW_CASE_STATUSES)[number];

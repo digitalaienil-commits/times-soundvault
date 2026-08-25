@@ -1,4 +1,5 @@
 import type { ContentIdEligibility, RightsBasis } from "./domain/rights";
+import type { SubmissionStatus } from "./domain/submission";
 
 export const ACCEPTED_AUDIO_EXTENSIONS = [".wav", ".mp3"] as const;
 export type AcceptedAudioExtension = (typeof ACCEPTED_AUDIO_EXTENSIONS)[number];
@@ -147,9 +148,18 @@ export interface TrackPackageDraftInput {
 
 export interface CreateUploadBatchInput {
   idempotencyKey: string;
+  revisionSubmissionId?: string;
   label?: string;
   acknowledgementAccepted: boolean;
   packages: TrackPackageDraftInput[];
+}
+
+export interface RevisionUploadContext {
+  submissionId: string;
+  nextRevisionNumber: number;
+  title: string;
+  producerMetadata: ProducerMetadataInput;
+  rights: RightsDraftInput;
 }
 
 export interface CreatedUploadFile {
@@ -170,7 +180,7 @@ export interface UploadWorkspaceSubmission {
   batchLabel: string | null;
   ownerUserId: string;
   ownerName: string;
-  status: string;
+  status: SubmissionStatus;
   revisionId: string;
   revisionNumber: number;
   title: string;

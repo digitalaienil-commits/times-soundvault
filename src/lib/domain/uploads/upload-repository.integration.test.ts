@@ -372,4 +372,117 @@ databaseDescribe("Section 4 PostgreSQL upload workspace", () => {
       completeUploadSession(pool, file.session.id, producer, config, provider),
     ).rejects.toMatchObject({ code: "UPLOAD_CANCELLED" });
   });
+
+  it("creates and submits immutable Revision N+1 after changes are requested", async () => {
+    const producer = await insertUser(pool, "music_producer");
+    const bytes = wavBytes();
+    const original = await createUploadDraftBatch(
+      pool,
+      producer,
+      input(bytes.length, "original-revision-request"),
+      config,
+      provider,
+    );
+    const originalFile = original.files[0]!;
+    const originalAccess = await getUploadSessionAccess(
+      pool,
+      originalFile.session.id,
+    );
+    const originalReference = storageReferenceForSession(
+      originalAccess!,
+      config,
+    );
+    const originalWrite = await provider.writeChunk({
+      reference: originalReference,
+      body: stream(bytes),
+      start: 0,
+      end: bytes.length - 1,
+      total: bytes.length,
+    });
+    await updateUploadProgress(
+      pool,
+      originalFile.session.id,
+      originalWrite.uploadedByteSize,
+    );
+    await completeUploadSession(
+      pool,
+      originalFile.session.id,
+      producer,
+      config,
+      provider,
+    );
+    await submitCompletedDraft(pool, originalFile.submissionId, producer);
+    await pool.query(
+      `UPDATE workflow.submission SET status='changes_requested' WHERE id=$1`,
+      [originalFile.submissionId],
+    );
+
+    const revisionInput = input(bytes.length, "replacement-revision-request");
+    revisionInput.revisionSubmissionId = originalFile.submissionId;
+    revisionInput.packages[0]!.workingTitle = "Integration Theme Revised";
+    revisionInput.packages[0]!.producerMetadata.workingTitle =
+      "Integration Theme Revised";
+    const replacement = await createUploadDraftBatch(
+      pool,
+      producer,
+      revisionInput,
+      config,
+      provider,
+    );
+    const replacementFile = replacement.files[0]!;
+    expect(replacementFile.submissionId).toBe(originalFile.submissionId);
+    const replacementAccess = await getUploadSessionAccess(
+      pool,
+      replacementFile.session.id,
+    );
+    const replacementReference = storageReferenceForSession(
+      replacementAccess!,
+      config,
+    );
+    expect(replacementReference.storageKey).toContain("/revisions/2/");
+    const replacementWrite = await provider.writeChunk({
+      reference: replacementReference,
+      body: stream(bytes),
+      start: 0,
+      end: bytes.length - 1,
+      total: bytes.length,
+    });
+    await updateUploadProgress(
+      pool,
+      replacementFile.session.id,
+      replacementWrite.uploadedByteSize,
+    );
+    await completeUploadSession(
+      pool,
+      replacementFile.session.id,
+      producer,
+      config,
+      provider,
+    );
+    await submitCompletedDraft(pool, replacementFile.submissionId, producer);
+
+    const revisions = await pool.query<{
+      revision_number: number;
+      revision_status: string;
+    }>(
+      `SELECT revision_number,revision_status
+       FROM workflow.submission_revision WHERE submission_id=$1
+       ORDER BY revision_number`,
+      [originalFile.submissionId],
+    );
+    expect(revisions.rows).toEqual([
+      { revision_number: 1, revision_status: "superseded" },
+      { revision_number: 2, revision_status: "submitted" },
+    ]);
+    const event = await pool.query<{ count: string }>(
+      `SELECT count(*)::text AS count FROM workflow.submission_event
+       WHERE submission_id=$1 AND event_type='resubmitted'
+         AND from_status='changes_requested' AND to_status='submitted'`,
+      [originalFile.submissionId],
+    );
+    expect(event.rows[0]?.count).toBe("1");
+    await expect(
+      provider.getUploadStatus(originalReference),
+    ).resolves.toMatchObject({ uploadedByteSize: bytes.length });
+  });
 });
