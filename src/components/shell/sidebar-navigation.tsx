@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { getNavigationForRole } from "@/lib/auth/permissions";
+import { getNavigationForRole } from "@/config/navigation";
 import { cn } from "@/lib/utilities/cn";
 import type { UserRole } from "@/types/auth";
 

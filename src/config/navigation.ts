@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import type { NavigationItem, WorkspaceRoute } from "@/types/navigation";
+import { isUserRole } from "@/types/auth";
 
 export const navigationItems = [
   {
@@ -86,3 +87,10 @@ export const workspaceRoutes = [
   "/team",
   "/admin",
 ] as const satisfies readonly WorkspaceRoute[];
+
+export function getNavigationForRole(role: unknown): NavigationItem[] {
+  if (!isUserRole(role)) return [];
+  return navigationItems.filter((item) =>
+    item.roles.some((allowedRole) => allowedRole === role),
+  );
+}

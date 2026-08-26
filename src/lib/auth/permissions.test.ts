@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getNavigationForRole } from "@/lib/auth/permissions";
+import { getNavigationForRole } from "@/config/navigation";
 import {
   getPermissionsForRole,
   hasAllPermissions,

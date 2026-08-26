@@ -1,7 +1,5 @@
-import { navigationItems } from "@/config/navigation";
 import type { UserRole } from "@/types/auth";
 import { isUserRole } from "@/types/auth";
-import type { NavigationItem } from "@/types/navigation";
 
 export const PERMISSIONS = [
   "workspace.access",
@@ -106,14 +104,4 @@ export function hasAnyPermission(
   permissions: readonly Permission[],
 ): boolean {
   return permissions.some((permission) => hasPermission(role, permission));
-}
-
-export function getNavigationForRole(role: unknown): NavigationItem[] {
-  if (!isUserRole(role)) {
-    return [];
-  }
-
-  return navigationItems.filter((item) =>
-    item.roles.some((allowedRole) => allowedRole === role),
-  );
 }
