@@ -37,10 +37,10 @@ jobs:
       GOOGLE_CLIENT_SECRET: ci-google-secret
       GOOGLE_WORKSPACE_DOMAIN: soundvault.test
       STORAGE_PROVIDER: local
-      LOCAL_STORAGE_ROOT: ${{ runner.temp }}/soundvault-storage
+      LOCAL_STORAGE_ROOT: ${{ github.workspace }}/.ci/soundvault-storage
       COPYRIGHT_PROVIDER: manual_youtube
-      COPYRIGHT_TEMP_ROOT: ${{ runner.temp }}/soundvault-copyright
-      MEDIA_TEMP_ROOT: ${{ runner.temp }}/soundvault-media
+      COPYRIGHT_TEMP_ROOT: ${{ github.workspace }}/.ci/soundvault-copyright
+      MEDIA_TEMP_ROOT: ${{ github.workspace }}/.ci/soundvault-media
       MEDIA_PROFILE_VERSION: 1
       MEDIA_PREVIEW_BITRATE_KBPS: 192
       MEDIA_PREVIEW_SAMPLE_RATE_HZ: 48000
@@ -167,10 +167,10 @@ jobs:
       LOCAL_USER_EMAIL: user@soundvault.test
       LOCAL_USER_PASSWORD: local-user-password-ci
       STORAGE_PROVIDER: local
-      LOCAL_STORAGE_ROOT: ${{ runner.temp }}/soundvault-storage
+      LOCAL_STORAGE_ROOT: ${{ github.workspace }}/.ci/soundvault-storage
       COPYRIGHT_PROVIDER: manual_youtube
-      COPYRIGHT_TEMP_ROOT: ${{ runner.temp }}/soundvault-copyright
-      MEDIA_TEMP_ROOT: ${{ runner.temp }}/soundvault-media
+      COPYRIGHT_TEMP_ROOT: ${{ github.workspace }}/.ci/soundvault-copyright
+      MEDIA_TEMP_ROOT: ${{ github.workspace }}/.ci/soundvault-media
       MEDIA_PROFILE_VERSION: 1
       MEDIA_PREVIEW_BITRATE_KBPS: 192
       MEDIA_PREVIEW_SAMPLE_RATE_HZ: 48000
