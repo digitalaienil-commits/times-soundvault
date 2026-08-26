@@ -93,7 +93,6 @@ jobs:
           pnpm domain:migrate
           pnpm domain:status
           pnpm catalog:search:status
-          pnpm auth:seed-local
 
       - name: Check formatting
         run: pnpm format:check
