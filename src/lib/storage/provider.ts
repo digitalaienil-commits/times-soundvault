@@ -83,6 +83,28 @@ export interface OpenStoredObjectInput {
 export interface OpenedStoredObject {
   body: ReadableStream<Uint8Array>;
   contentLength: number;
+  abort(): void;
+}
+
+export interface StoreGeneratedObjectInput {
+  storageKey: string;
+  sourcePath: string;
+  contentType: "audio/mpeg" | "application/zip";
+  expectedByteSize: number;
+}
+
+export interface GeneratedStoredObject {
+  storageBackend: StorageKind;
+  storageKey: string;
+  byteSize: number;
+  providerDriveId?: string;
+  providerItemId?: string;
+}
+
+export interface DeleteGeneratedObjectInput {
+  storageKey: string;
+  providerDriveId?: string | null;
+  providerItemId?: string | null;
 }
 
 export interface StorageProvider {
@@ -103,6 +125,10 @@ export interface StorageProvider {
     input: MaterializeStoredObjectInput,
   ): Promise<MaterializedObject>;
   openStoredObject(input: OpenStoredObjectInput): Promise<OpenedStoredObject>;
+  storeGeneratedObject(
+    input: StoreGeneratedObjectInput,
+  ): Promise<GeneratedStoredObject>;
+  deleteGeneratedObject(input: DeleteGeneratedObjectInput): Promise<void>;
 }
 
 export class StorageProviderError extends Error {

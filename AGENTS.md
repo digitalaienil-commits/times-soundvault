@@ -63,6 +63,11 @@ verify the final item independently. Never silently fall back providers.
 - Use relative imports within one feature and `@/*` across layers.
 - Keep provider SDKs behind future server adapters; never import them into UI.
 - Never expose secret keys to browser code or public environment variables.
+- Keep source audio immutable. Playback uses private generated previews; secure
+  downloads stream exact sources or short-lived generated packages.
+- Media HTTP handlers must independently enforce the current published
+  revision, use the Node.js runtime, support cancellation and never buffer a
+  complete audio file or ZIP in memory.
 
 Use Server Components by default. Add `"use client"` only for real browser
 state, interactions, or navigation hooks. Keep TypeScript strict, names and

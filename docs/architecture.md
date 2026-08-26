@@ -1,5 +1,14 @@
 # Architecture
 
+## Private media delivery
+
+Section 10 keeps routes thin: Library pages compose catalog components, media
+repositories own published-revision predicates, storage adapters own provider
+I/O, and the workspace shell owns the persistent player. HTTP work never runs
+FFmpeg. Durable workers generate versioned previews, waveforms and packages
+outside `public/`; browser DTOs contain only safe labels, readiness, peaks and
+authenticated application URLs.
+
 ## Ownership and dependency direction
 
 | Area                       | Owns                                                    |

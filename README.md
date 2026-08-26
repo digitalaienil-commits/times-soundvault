@@ -124,6 +124,12 @@ pnpm copyright:status    # safe database counts; no YouTube request
 pnpm catalog:search:status
 pnpm catalog:search:rebuild -- --dry-run
 pnpm catalog:search:benchmark # rollback-only 10k plan check
+pnpm media:worker         # process preview and package jobs continuously
+pnpm media:once           # process at most one ready media job
+pnpm media:reconcile      # recover leases and enqueue missing previews
+pnpm media:cleanup        # dry-run expired package cleanup
+pnpm media:status         # safe artifact/job/package counts
+pnpm media:verify         # verify FFmpeg, ffprobe, unzip and media config
 pnpm dev
 pnpm format
 pnpm format:check
@@ -164,6 +170,14 @@ Section 9 uses a PostgreSQL-only, trigger-maintained search projection for
 published canonical Tracks. See
 [docs/searchable-published-library.md](docs/searchable-published-library.md).
 
+Section 10 adds private versioned playback derivatives, streamed waveform
+peaks, a workspace-level player, exact Master/Stem downloads and durable
+short-lived ZIP delivery. Every media request independently enforces the
+current published Revision. See
+[docs/professional-player-downloads.md](docs/professional-player-downloads.md),
+[docs/media-artifacts.md](docs/media-artifacts.md) and
+[docs/secure-media-delivery.md](docs/secure-media-delivery.md).
+
 Section 4 storage is behind a server-only adapter. Local development writes
 generated object keys beneath an ignored private root, verifies exact size and
 WAV/MP3 signatures, and atomically publishes completed files. The OneDrive
@@ -191,8 +205,8 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 
 - Google and Microsoft modes require real organization credentials and have not
   been live-tested by the repository test suite.
-- Professional playback and catalog downloads remain planned work; no fake
-  records are shown.
+- Live OneDrive generated-object upload and range delivery require organization
+  credentials; automated coverage uses mocked Microsoft Graph responses.
 - YouTube Content ID/CMS automation is not connected or live-tested. Section 6
   uses a manual operational workflow and is API-ready.
 - The OneDrive adapter is covered with mocked HTTP tests. Live Microsoft Graph

@@ -2,7 +2,7 @@ import "server-only";
 
 import { ClientSecretCredential } from "@azure/identity";
 import { createWriteStream } from "node:fs";
-import { mkdir, rm, stat } from "node:fs/promises";
+import { mkdir, open, rm, stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
@@ -11,11 +11,14 @@ import { assertAudioSignature } from "../signature";
 import type {
   CreateStorageUploadInput,
   DeleteDraftObjectInput,
+  DeleteGeneratedObjectInput,
+  GeneratedStoredObject,
   MaterializedObject,
   MaterializeStoredObjectInput,
   OpenedStoredObject,
   OpenStoredObjectInput,
   StorageProvider,
+  StoreGeneratedObjectInput,
   StorageUploadSession,
   StorageUploadSessionReference,
   StorageUploadStatus,
@@ -387,12 +390,14 @@ export class OneDriveStorageProvider implements StorageProvider {
       );
     }
     const url = `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(input.providerDriveId)}/items/${encodeURIComponent(input.providerItemId)}/content`;
+    const controller = new AbortController();
     const response = await this.request(url, {
       headers: {
         Authorization: await this.authorizationHeader(),
         Range: `bytes=${input.start}-${input.end}`,
       },
       redirect: "follow",
+      signal: controller.signal,
     });
     if (response.status === 404) {
       throw new StorageProviderError(
@@ -412,6 +417,129 @@ export class OneDriveStorageProvider implements StorageProvider {
     return {
       body: response.body,
       contentLength: input.end - input.start + 1,
+      abort: () => controller.abort(),
     };
+  }
+
+  async storeGeneratedObject(
+    input: StoreGeneratedObjectInput,
+  ): Promise<GeneratedStoredObject> {
+    if (
+      !/^generated\/(?:previews\/[0-9a-f-]+\.mp3|packages\/[0-9a-f-]+\.zip)$/.test(
+        input.storageKey,
+      )
+    ) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Generated OneDrive storage key is invalid",
+      );
+    }
+    const sessionUrl = `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(this.config.driveId)}/items/${encodeURIComponent(this.config.rootItemId)}:/${input.storageKey
+      .split("/")
+      .map(encodeURIComponent)
+      .join("/")}:/createUploadSession`;
+    const created = await this.request(sessionUrl, {
+      method: "POST",
+      headers: {
+        Authorization: await this.authorizationHeader(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        item: {
+          "@microsoft.graph.conflictBehavior": "fail",
+          name: path.basename(input.storageKey),
+        },
+      }),
+    });
+    if (!created.ok) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Generated OneDrive upload session creation failed",
+      );
+    }
+    const session = (await created.json()) as UploadSessionResponse;
+    if (!session.uploadUrl) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Generated OneDrive upload session is incomplete",
+      );
+    }
+    const handle = await open(input.sourcePath, "r");
+    let offset = 0;
+    let item: GraphDriveItem | null = null;
+    try {
+      while (offset < input.expectedByteSize) {
+        const length = Math.min(
+          this.chunkSize,
+          input.expectedByteSize - offset,
+        );
+        const buffer = Buffer.allocUnsafe(length);
+        const { bytesRead } = await handle.read(buffer, 0, length, offset);
+        if (bytesRead !== length) {
+          throw new StorageProviderError(
+            "SIZE_MISMATCH",
+            "Generated object changed during OneDrive upload",
+          );
+        }
+        const end = offset + length - 1;
+        const response = await this.request(session.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Length": String(length),
+            "Content-Range": `bytes ${offset}-${end}/${input.expectedByteSize}`,
+          },
+          body: buffer,
+        });
+        if (![200, 201, 202].includes(response.status)) {
+          throw new StorageProviderError(
+            "PROVIDER_FAILURE",
+            "Generated OneDrive object upload failed",
+          );
+        }
+        if (response.status !== 202)
+          item = (await response.json()) as GraphDriveItem;
+        offset += length;
+      }
+    } finally {
+      await handle.close();
+    }
+    if (!item?.id || item.size !== input.expectedByteSize) {
+      throw new StorageProviderError(
+        "SIZE_MISMATCH",
+        "Generated OneDrive item verification failed",
+      );
+    }
+    return {
+      storageBackend: "onedrive",
+      storageKey: input.storageKey,
+      byteSize: input.expectedByteSize,
+      providerDriveId: this.config.driveId,
+      providerItemId: item.id,
+    };
+  }
+
+  async deleteGeneratedObject(
+    input: DeleteGeneratedObjectInput,
+  ): Promise<void> {
+    if (
+      input.providerDriveId !== this.config.driveId ||
+      !input.providerItemId
+    ) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Generated OneDrive reference is invalid",
+      );
+    }
+    const url = `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(this.config.driveId)}/items/${encodeURIComponent(input.providerItemId)}`;
+    const response = await this.request(url, {
+      method: "DELETE",
+      headers: { Authorization: await this.authorizationHeader() },
+    });
+    if (!response.ok && response.status !== 404) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Generated OneDrive object deletion failed",
+      );
+    }
   }
 }

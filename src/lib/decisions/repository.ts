@@ -5,6 +5,8 @@ import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 
 import { hasPermission, type Permission } from "@/lib/auth/permissions";
+import { parseMediaConfig } from "@/lib/media/config";
+import { enqueuePlaybackArtifacts } from "@/lib/media/repository";
 import type { CurrentUser } from "@/types/auth";
 import type {
   ApprovedPublicationItem,
@@ -974,6 +976,13 @@ async function publishLocked(
       { publicationEvent: eventType },
     ],
   );
+  const mediaConfig = parseMediaConfig();
+  await enqueuePlaybackArtifacts(client, {
+    trackId: row.track_id,
+    revisionId: row.revision_id,
+    profileVersion: mediaConfig.profileVersion,
+    maxAttempts: mediaConfig.jobMaxRetries,
+  });
   return { trackId: row.track_id, idempotent: false };
 }
 

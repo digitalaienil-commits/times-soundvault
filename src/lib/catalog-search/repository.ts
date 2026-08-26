@@ -11,6 +11,7 @@ import type {
   PublishedTrackDetail,
 } from "@/types/catalog-search";
 import type { TaxonomyCategory } from "@/types/domain/metadata";
+import { parseMediaConfig } from "@/lib/media/config";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
@@ -65,6 +66,8 @@ interface SearchRow extends QueryResultRow {
   terms: CatalogSearchItem["terms"] | null;
   relevance: number | string | null;
   total_count: number | string;
+  playback_status?: CatalogSearchItem["playbackStatus"];
+  master_playback_ready?: boolean;
 }
 
 function numberOrNull(value: number | string | null): number | null {
@@ -112,6 +115,8 @@ function mapSearchRow(row: SearchRow): CatalogSearchItem | null {
     stemCount: Number(row.stem_count ?? 0),
     terms: row.terms ?? [],
     relevance: Number(row.relevance ?? 0),
+    playbackStatus: row.playback_status ?? "preparing",
+    masterPlaybackReady: row.master_playback_ready ?? false,
   };
 }
 
@@ -253,6 +258,7 @@ function buildSearchSql(input: CatalogSearchInput) {
     input.sort === "relevance" && !input.query ? "newest" : input.sort;
   const limit = bind(input.pageSize, "::int");
   const offset = bind((input.page - 1) * input.pageSize, "::int");
+  const mediaProfileVersion = bind(parseMediaConfig().profileVersion, "::int");
 
   const sql = `
     WITH query_input AS (
@@ -297,6 +303,28 @@ function buildSearchSql(input: CatalogSearchInput) {
       WHERE assignment.review_status = 'accepted'
       GROUP BY assignment.track_id
     ),
+    playback_summary AS (
+      SELECT track.id AS track_id,
+             CASE
+               WHEN count(asset.id) FILTER (WHERE artifact.status='ready') = count(asset.id)
+                    AND count(asset.id) > 0 THEN 'ready'
+               WHEN count(asset.id) FILTER (WHERE artifact.status='ready') > 0 THEN 'partial'
+               WHEN bool_or(artifact.status='failed') THEN 'failed'
+               ELSE 'preparing'
+             END AS playback_status,
+             bool_or(asset.asset_role='master' AND artifact.status='ready')
+               AS master_playback_ready
+      FROM catalog.track track
+      JOIN catalog.audio_asset asset
+        ON asset.track_id=track.id
+       AND asset.submission_revision_id=track.published_revision_id
+      LEFT JOIN media.playback_artifact artifact
+        ON artifact.audio_asset_id=asset.id
+       AND artifact.submission_revision_id=track.published_revision_id
+       AND artifact.profile_version=${mediaProfileVersion}
+      WHERE track.publication_status='published'
+      GROUP BY track.id
+    ),
     filtered AS (
       SELECT track.id AS track_id,
              track.published_revision_id,
@@ -319,6 +347,8 @@ function buildSearchSql(input: CatalogSearchInput) {
              master.duration_ms,
              coalesce(stems.stem_count, 0) AS stem_count,
              coalesce(accepted_terms.terms, '[]'::jsonb) AS terms,
+             coalesce(playback.playback_status,'preparing') AS playback_status,
+             coalesce(playback.master_playback_ready,false) AS master_playback_ready,
              ${relevance} AS relevance
       FROM catalog.track track
       JOIN catalog.track_search_document document
@@ -329,6 +359,7 @@ function buildSearchSql(input: CatalogSearchInput) {
       LEFT JOIN master_technical master ON master.track_id = track.id
       LEFT JOIN stem_summary stems ON stems.track_id = track.id
       LEFT JOIN accepted_terms ON accepted_terms.track_id = track.id
+      LEFT JOIN playback_summary playback ON playback.track_id = track.id
       WHERE ${conditions.join("\n        AND ")}
     ),
     page AS (

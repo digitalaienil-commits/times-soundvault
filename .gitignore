@@ -53,3 +53,4 @@ next-env.d.ts
 /.soundvault-storage/
 /.soundvault-processing/
 /.soundvault-copyright/
+/.soundvault-media/

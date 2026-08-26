@@ -18,11 +18,14 @@ import { assertAudioSignature } from "../signature";
 import type {
   CreateStorageUploadInput,
   DeleteDraftObjectInput,
+  DeleteGeneratedObjectInput,
+  GeneratedStoredObject,
   MaterializedObject,
   MaterializeStoredObjectInput,
   OpenedStoredObject,
   OpenStoredObjectInput,
   StorageProvider,
+  StoreGeneratedObjectInput,
   StorageUploadSession,
   StorageUploadSessionReference,
   StorageUploadStatus,
@@ -39,7 +42,7 @@ export class LocalStorageProvider implements StorageProvider {
 
   private resolveStorageKey(storageKey: string): string {
     if (
-      !/^submissions\/[0-9a-f-]+\/revisions\/[1-9][0-9]*\/[0-9a-f-]+\.(?:wav|mp3)(?:\.part)?$/.test(
+      !/^(?:submissions\/[0-9a-f-]+\/revisions\/[1-9][0-9]*\/[0-9a-f-]+\.(?:wav|mp3)|generated\/(?:previews\/[0-9a-f-]+\.mp3|packages\/[0-9a-f-]+\.zip))(?:\.part)?$/.test(
         storageKey,
       )
     ) {
@@ -272,11 +275,14 @@ export class LocalStorageProvider implements StorageProvider {
           "Stored object range exceeds its size",
         );
       }
+      const source = createReadStream(sourcePath, {
+        start: input.start,
+        end: input.end,
+      });
       return {
-        body: Readable.toWeb(
-          createReadStream(sourcePath, { start: input.start, end: input.end }),
-        ) as ReadableStream<Uint8Array>,
+        body: Readable.toWeb(source) as ReadableStream<Uint8Array>,
         contentLength: input.end - input.start + 1,
+        abort: () => source.destroy(),
       };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -287,5 +293,51 @@ export class LocalStorageProvider implements StorageProvider {
       }
       throw error;
     }
+  }
+
+  async storeGeneratedObject(
+    input: StoreGeneratedObjectInput,
+  ): Promise<GeneratedStoredObject> {
+    const finalPath = this.resolveStorageKey(input.storageKey);
+    const partPath = `${finalPath}.part`;
+    await mkdir(path.dirname(finalPath), { recursive: true, mode: 0o700 });
+    try {
+      await pipeline(
+        createReadStream(input.sourcePath),
+        createWriteStream(partPath, { flags: "wx", mode: 0o600 }),
+      );
+      const size = (await stat(partPath)).size;
+      if (size !== input.expectedByteSize) {
+        throw new StorageProviderError(
+          "SIZE_MISMATCH",
+          "Generated object size changed while it was stored",
+        );
+      }
+      await link(partPath, finalPath);
+      await unlink(partPath);
+      return {
+        storageBackend: "local",
+        storageKey: input.storageKey,
+        byteSize: size,
+      };
+    } catch (error) {
+      await rm(partPath, { force: true });
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        throw new StorageProviderError(
+          "STORAGE_CONFLICT",
+          "Generated object already exists",
+        );
+      }
+      throw error;
+    }
+  }
+
+  async deleteGeneratedObject(
+    input: DeleteGeneratedObjectInput,
+  ): Promise<void> {
+    await Promise.all([
+      rm(this.resolveStorageKey(input.storageKey), { force: true }),
+      rm(`${this.resolveStorageKey(input.storageKey)}.part`, { force: true }),
+    ]);
   }
 }

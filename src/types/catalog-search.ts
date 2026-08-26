@@ -4,6 +4,7 @@ import type {
   TaxonomyCategory,
   VocalState,
 } from "./domain/metadata";
+import type { PlaybackStatus } from "./media";
 
 export const CATALOG_SORTS = [
   "relevance",
@@ -83,6 +84,8 @@ export interface CatalogSearchItem {
   stemCount: number;
   terms: CatalogDisplayTerm[];
   relevance: number;
+  playbackStatus: PlaybackStatus;
+  masterPlaybackReady: boolean;
 }
 
 export interface CatalogFacetOption {

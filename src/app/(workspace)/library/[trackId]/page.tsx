@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, AudioLines } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { TrackMediaPanel } from "@/features/catalog/components/track-media-panel";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
 import { getPublishedTrackDetail } from "@/lib/catalog-search/service";
 
@@ -138,6 +139,7 @@ export default async function PublishedTrackPage({
           </div>
         </section>
         <aside className="space-y-6">
+          <TrackMediaPanel trackId={track.trackId} />
           <section
             aria-labelledby="technical-summary"
             className="rounded-xl border border-border bg-surface p-6"
@@ -152,7 +154,9 @@ export default async function PublishedTrackPage({
               {technicalItems.map(([label, item]) => (
                 <div key={label} className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="text-right text-foreground">{value(item)}</dd>
+                  <dd className="max-w-[55%] min-w-0 text-right break-words text-foreground">
+                    {value(item)}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -175,9 +179,6 @@ export default async function PublishedTrackPage({
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                Playback and downloads arrive in Section 10.
-              </p>
             </section>
           ) : null}
         </aside>

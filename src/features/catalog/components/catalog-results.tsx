@@ -8,6 +8,7 @@ import {
   catalogSearchInputToParams,
 } from "@/lib/catalog-search/filters";
 import type { CatalogSearchResult } from "@/types/catalog-search";
+import { LibraryMediaActions } from "./library-media-actions";
 
 function formatDuration(ms: number | null) {
   if (ms === null) return "Duration unavailable";
@@ -91,6 +92,14 @@ export function CatalogResults({ result }: { result: CatalogSearchResult }) {
       </>
     );
   }
+  const playbackQueue = items
+    .filter((item) => item.masterPlaybackReady)
+    .map((item) => ({
+      trackId: item.trackId,
+      title: item.title,
+      versionLabel: item.versionLabel,
+      durationMs: item.durationMs,
+    }));
   return (
     <section aria-labelledby="library-results-title">
       {activeFilters}
@@ -108,10 +117,7 @@ export function CatalogResults({ result }: { result: CatalogSearchResult }) {
       <ul className="space-y-3">
         {items.map((track) => (
           <li key={track.trackId}>
-            <Link
-              href={`/library/${track.trackId}`}
-              className="group block rounded-xl border border-border bg-surface p-5 transition-colors hover:bg-muted focus-visible:outline-offset-2"
-            >
+            <article className="rounded-xl border border-border bg-surface p-5 transition-colors hover:bg-muted">
               <div className="flex gap-4">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
                   <AudioLines aria-hidden="true" className="size-5" />
@@ -119,8 +125,13 @@ export function CatalogResults({ result }: { result: CatalogSearchResult }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <h3 className="font-semibold text-foreground group-hover:text-brand">
-                        {track.title}
+                      <h3>
+                        <Link
+                          href={`/library/${track.trackId}`}
+                          className="font-semibold text-foreground underline-offset-4 hover:text-brand hover:underline"
+                        >
+                          {track.title}
+                        </Link>
                       </h3>
                       <p className="mt-1 text-sm text-muted-foreground">
                         {track.versionLabel ??
@@ -161,9 +172,18 @@ export function CatalogResults({ result }: { result: CatalogSearchResult }) {
                       </Badge>
                     ))}
                   </div>
+                  <div className="mt-4">
+                    <LibraryMediaActions
+                      trackId={track.trackId}
+                      title={track.title}
+                      queue={playbackQueue}
+                      playbackStatus={track.playbackStatus}
+                      masterPlaybackReady={track.masterPlaybackReady}
+                    />
+                  </div>
                 </div>
               </div>
-            </Link>
+            </article>
           </li>
         ))}
       </ul>

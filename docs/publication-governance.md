@@ -1,5 +1,12 @@
 # Publication governance
 
+Publishing remains a separate governed action. After the Track and publication
+event are committed in the same transaction, Section 10 idempotently records
+preview jobs for the published Revision. A preview failure does not reverse or
+block publication. Withdrawal does not delete history, but every media query's
+current-published predicate immediately denies old previews, sources and
+packages.
+
 The centralized server-only gate requires an approved current Revision and an
 append-only approval decision, canonical title and vocal state, exactly one
 accepted Format, at least one accepted Use Case, known and unexpired master and
