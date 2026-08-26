@@ -23,6 +23,15 @@ secrets remain server-side and no secret may use a public environment variable.
 The Channels concept is prohibited. Do not add related navigation, filters,
 badges, models, mock data, counts, or copy.
 
+Demand Sheet is internal music supply planning, not a task manager or sync CRM.
+Users have no Demand access; Producers never see drafts or another Producer's
+response record. Required fit is recomputed from the current published
+canonical Track and has no override. Preferred requirements cannot block.
+Demand production must reuse the normal upload-to-publication workflow, catalog
+finding must reuse Section 9 search, and playback must reuse Section 10 media.
+Do not add external brief sharing, notifications, semantic matching or AI
+recommendations to Section 11.
+
 Composition and Track are separate concepts. Stems are revision-bound Track
 assets, while cut-downs, remixes and alternate mixes are child Tracks.
 Submitted revisions are never silently overwritten. Producer, embedded, AI and

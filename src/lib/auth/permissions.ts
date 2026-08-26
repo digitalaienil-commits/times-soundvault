@@ -24,6 +24,7 @@ export const PERMISSIONS = [
   "demand.read",
   "demand.create",
   "demand.manage",
+  "demand.respond",
   "team.read",
   "team.manage",
   "providers.manage",
@@ -51,6 +52,7 @@ const MUSIC_PRODUCER_PERMISSIONS = [
   "submission.readOwn",
   "submission.updateOwn",
   "demand.read",
+  "demand.respond",
   "copyright.readOwn",
 ] as const satisfies readonly Permission[];
 
@@ -70,6 +72,7 @@ const COORDINATOR_PERMISSIONS = [
   "demand.read",
   "demand.create",
   "demand.manage",
+  "demand.respond",
   "copyright.readAll",
   "copyright.prepare",
   "copyright.record",

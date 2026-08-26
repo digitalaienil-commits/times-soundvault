@@ -61,6 +61,13 @@ Browser
   -> server-only storage adapter (upload routes only)
 ```
 
+Demand routes add a `planning` aggregate behind `src/lib/demands`. They reuse
+the catalog-search service for published candidates, the shared published media
+controls for playback/download and the Upload repository transaction for new
+production. Features do not import one another: route composition and stable
+server libraries connect these existing systems. Demand decisions never write
+catalog metadata or publication state.
+
 Provider secrets, OAuth tokens, password hashes and session tokens never cross
 the server boundary. Future audio/provider SDKs remain behind server adapters;
 they are not imported into UI modules.
@@ -104,6 +111,8 @@ boundary:
 - `rights`: revision-specific Producer declarations, copyright checks,
   eligibility reviews, observations, manual batches, reference links and jobs;
 - `system`: checksummed domain migration history.
+- `planning`: Demands, controlled requirements, contributor/reference links,
+  private responses and append-only events.
 
 Server-only repositories live below `src/lib/domain` and accept an injected
 PostgreSQL query boundary. They use fully qualified, parameterized SQL and map

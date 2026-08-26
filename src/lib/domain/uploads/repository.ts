@@ -14,6 +14,7 @@ import type {
   UploadWorkspaceSubmission,
   RevisionUploadContext,
 } from "@/types/uploads";
+import { linkCreatedSubmissionResponse } from "@/lib/demands/repository";
 
 import {
   decryptProviderSession,
@@ -227,6 +228,14 @@ export async function createUploadDraftBatch(
             `${parsed.idempotencyKey}:${packageInput.clientId}`,
           ],
         );
+        if (parsed.demandId) {
+          await linkCreatedSubmissionResponse(client, {
+            demandId: parsed.demandId,
+            trackId,
+            submissionId,
+            actor: user,
+          });
+        }
       }
       await client.query(
         `INSERT INTO workflow.submission_revision (

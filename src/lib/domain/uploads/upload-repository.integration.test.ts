@@ -10,6 +10,10 @@ import type { CurrentUser } from "@/types/auth";
 import type { CreateUploadBatchInput } from "@/types/uploads";
 import type { StorageConfig } from "@/lib/storage/config";
 import { LocalStorageProvider } from "@/lib/storage/local/provider";
+import {
+  getDemandDetail,
+  submitOrRefreshResponse,
+} from "@/lib/demands/repository";
 
 import {
   cancelUploadSession,
@@ -197,6 +201,98 @@ databaseDescribe("Section 4 PostgreSQL upload workspace", () => {
       submissions: "2",
       revisions: "2",
       sessions: "2",
+    });
+  });
+
+  it("creates a normal draft Submission and working Demand response atomically", async () => {
+    const producer = await insertUser(pool, "music_producer");
+    const demandId = randomUUID();
+    await pool.query(
+      `INSERT INTO planning.demand
+       (id,title,project_context,brief,priority,status,asset_kind,target_track_count,
+        response_deadline_on,needed_by_on,owner_user_id,created_by_user_id,opened_at)
+       VALUES ($1,'Integration music need','Campaign','A complete integration music brief for upload testing.',
+        'normal','open','music',1,CURRENT_DATE+5,CURRENT_DATE+10,$2,$2,now())`,
+      [demandId, producer.id],
+    );
+    const request = { ...input(wavBytes().length), demandId };
+    const created = await createUploadDraftBatch(
+      pool,
+      producer,
+      request,
+      config,
+      provider,
+    );
+    const repeated = await createUploadDraftBatch(
+      pool,
+      producer,
+      request,
+      config,
+      provider,
+    );
+    expect(repeated.batchId).toBe(created.batchId);
+    const response = await pool.query<{
+      id: string;
+      demand_id: string;
+      track_id: string;
+      submission_id: string;
+      origin: string;
+      status: string;
+      row_version: string;
+    }>(
+      `SELECT id,demand_id,track_id,submission_id,origin,status,row_version
+       FROM planning.demand_response WHERE demand_id=$1`,
+      [demandId],
+    );
+    expect(response.rows).toHaveLength(1);
+    const createdSubmission = await pool.query<{
+      track_id: string;
+      current_revision_id: string;
+    }>(
+      `SELECT track_id,current_revision_id
+       FROM workflow.submission WHERE id=$1`,
+      [created.submissions[0]!.submissionId],
+    );
+    expect(response.rows[0]).toMatchObject({
+      demand_id: demandId,
+      track_id: createdSubmission.rows[0]!.track_id,
+      submission_id: created.submissions[0]!.submissionId,
+      origin: "submission",
+      status: "working",
+    });
+    await expect(
+      submitOrRefreshResponse(pool, producer, {
+        demandId,
+        responseId: response.rows[0]!.id,
+        rowVersion: Number(response.rows[0]!.row_version),
+      }),
+    ).rejects.toMatchObject({ code: "INVALID" });
+
+    const revision = createdSubmission.rows[0]!.current_revision_id;
+    await pool.query(
+      `UPDATE workflow.submission_revision SET revision_status='accepted',submitted_at=now() WHERE id=$1`,
+      [revision],
+    );
+    await pool.query(
+      `UPDATE workflow.submission SET status='approved' WHERE id=$1`,
+      [created.submissions[0]!.submissionId],
+    );
+    await pool.query(
+      `UPDATE catalog.track SET publication_status='published',published_revision_id=$2,
+       published_by_user_id=$3,published_at=now() WHERE id=$1`,
+      [createdSubmission.rows[0]!.track_id, revision, producer.id],
+    );
+    await submitOrRefreshResponse(pool, producer, {
+      demandId,
+      responseId: response.rows[0]!.id,
+      rowVersion: Number(response.rows[0]!.row_version),
+    });
+    expect(
+      (await getDemandDetail(pool, demandId, producer))?.responses[0],
+    ).toMatchObject({
+      status: "submitted",
+      submittedPublishedRevisionId: revision,
+      currentPublishedRevisionId: revision,
     });
   });
 

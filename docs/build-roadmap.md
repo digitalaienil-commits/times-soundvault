@@ -4,6 +4,9 @@
 - Section 10 — professional player, Stem auditioning, secure exact-source
   downloads and durable delivery packages: complete after the documented
   quality, migration, FFmpeg, browser and production-build gates pass.
+- Section 11 — Demand Sheet, internal music briefs, catalog-first supply,
+  governed responses and current-fit acceptance: complete after clean database,
+  quality, browser, responsive, accessibility and production-build gates pass.
 
 Status is marked complete only after the section’s required checks pass.
 
@@ -17,7 +20,7 @@ Status is marked complete only after the section’s required checks pass.
 8. Approval, Changes, Rejection & Publishing — complete
 9. Searchable Published Library — complete
 10. Professional Player, Stems & Downloads — complete
-11. Demand Sheet — planned
+11. Demand Sheet — complete
 12. Admin Operations — planned
 13. Similarity Search & AI Generation — planned
 14. Production Hardening & Launch — planned
@@ -45,3 +48,11 @@ Section 10 adds durable private playback derivatives, streaming waveforms,
 one-at-a-time Master/Stem auditioning, exact source downloads and deterministic
 short-lived packages. It does not add a multitrack mixer, playlists, sharing,
 external media APIs or archive/delete.
+
+Section 11 adds an internal Demand Sheet for Coordinator/Admin briefs, required
+and preferred catalog requirements, Producer-owned private responses,
+catalog-first discovery and Demand-linked normal uploads. Acceptance is
+transactionally revalidated against the current published Revision and every
+Required requirement. It does not add a second catalog search, bypass normal
+publication governance, or introduce external notifications, matching APIs or
+AI recommendations.

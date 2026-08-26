@@ -24,14 +24,16 @@ function HiddenParams({
   ));
 }
 
-export function SearchControls({ input }: { input: CatalogSearchInput }) {
+export function SearchControls({
+  input,
+  action = "/library",
+}: {
+  input: CatalogSearchInput;
+  action?: string;
+}) {
   return (
     <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-      <form
-        action="/library"
-        role="search"
-        className="flex min-w-0 flex-1 gap-2"
-      >
+      <form action={action} role="search" className="flex min-w-0 flex-1 gap-2">
         <HiddenParams input={input} omit={["q", "page"]} />
         <label className="sr-only" htmlFor="library-query">
           Search published library
@@ -50,7 +52,7 @@ export function SearchControls({ input }: { input: CatalogSearchInput }) {
           Search
         </Button>
       </form>
-      <form action="/library" className="flex gap-2">
+      <form action={action} className="flex gap-2">
         <HiddenParams input={input} omit={["sort", "page"]} />
         <label className="sr-only" htmlFor="library-sort">
           Sort results

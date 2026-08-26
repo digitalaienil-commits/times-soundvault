@@ -356,9 +356,11 @@ function FilterFields({
 export function CatalogFilters({
   input,
   facets,
+  action = "/library",
 }: {
   input: CatalogSearchInput;
   facets: CatalogFacetGroup[];
+  action?: string;
 }) {
   const count = countActiveCatalogFilters(input);
   return (
@@ -368,7 +370,7 @@ export function CatalogFilters({
         aria-label="Library filters"
       >
         <form
-          action="/library"
+          action={action}
           className="rounded-xl border border-border bg-surface p-5"
         >
           <FilterFields input={input} facets={facets} />
@@ -392,7 +394,7 @@ export function CatalogFilters({
                 Narrow published music by approved catalog metadata.
               </SheetDescription>
             </SheetHeader>
-            <form action="/library" className="px-4 pb-6">
+            <form action={action} className="px-4 pb-6">
               <FilterFields input={input} facets={facets} />
             </form>
           </SheetContent>

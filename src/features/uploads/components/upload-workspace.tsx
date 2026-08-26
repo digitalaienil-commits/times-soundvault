@@ -20,6 +20,7 @@ import type {
   CreatedUploadBatch,
   PublicUploadConfig,
   RevisionUploadContext,
+  DemandUploadContext,
   StemType,
 } from "@/types/uploads";
 import { EDITORIAL_USES, NEWS_FORMATS, STEM_TYPES } from "@/types/uploads";
@@ -145,9 +146,11 @@ async function responseError(response: Response): Promise<string> {
 export function UploadWorkspace({
   config,
   revisionContext,
+  demandContext,
 }: {
   config: PublicUploadConfig;
   revisionContext?: RevisionUploadContext;
+  demandContext?: DemandUploadContext;
 }) {
   const [step, setStep] = useState(1);
   const [files, setFiles] = useState<SelectedUploadFile[]>([]);
@@ -300,6 +303,7 @@ export function UploadWorkspace({
     () => ({
       idempotencyKey: idempotencyKeyRef.current,
       revisionSubmissionId: revisionContext?.submissionId,
+      demandId: demandContext?.demandId,
       label:
         groups.length > 1
           ? `Bulk upload — ${groups.length} tracks`
@@ -353,7 +357,7 @@ export function UploadWorkspace({
           },
         })),
     }),
-    [acknowledged, files, groups, revisionContext],
+    [acknowledged, demandContext, files, groups, revisionContext],
   );
 
   const saveDraft = useCallback(async (): Promise<CreatedUploadBatch> => {
@@ -619,6 +623,47 @@ export function UploadWorkspace({
 
   return (
     <div className="mt-8 space-y-6">
+      {demandContext ? (
+        <aside
+          className="mb-5 rounded-xl border border-brand/30 bg-brand-soft p-5"
+          aria-labelledby="demand-upload-context"
+        >
+          <p className="text-xs font-semibold tracking-wide text-brand uppercase">
+            Demand context
+          </p>
+          <h2 id="demand-upload-context" className="mt-1 font-semibold">
+            {demandContext.displayNumber} · {demandContext.title}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Needed by {demandContext.neededByOn}. Canonical metadata remains
+            governed by the normal review and approval workflow.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
+            {demandContext.requiredTerms.map((term) => (
+              <span
+                key={term.id}
+                className="rounded-full border border-border bg-surface px-2 py-1"
+              >
+                Required: {term.label}
+              </span>
+            ))}
+            {demandContext.preferredTerms.map((term) => (
+              <span
+                key={term.id}
+                className="rounded-full border border-border bg-surface px-2 py-1"
+              >
+                Preferred: {term.label}
+              </span>
+            ))}
+          </div>
+          <Link
+            href={`/demands/${demandContext.demandId}`}
+            className="mt-3 inline-block text-sm font-semibold text-brand underline-offset-4 hover:underline"
+          >
+            Open Demand
+          </Link>
+        </aside>
+      ) : null}
       {revisionContext ? (
         <div className="rounded-xl border border-warning/40 bg-warning/5 p-4">
           <p className="font-semibold">
@@ -933,7 +978,9 @@ export function UploadWorkspace({
                           className="mt-2"
                           value={group.title}
                           onChange={(event) =>
-                            updateGroup(group.id, { title: event.target.value })
+                            updateGroup(group.id, {
+                              title: event.target.value,
+                            })
                           }
                         />
                       </label>

@@ -23,6 +23,10 @@ export const ROUTE_FAMILY_PERMISSIONS = {
   "/submissions/[submissionId]": "submission.readOwn",
   "/library/[trackId]": "library.read",
   "/copyright/batches/[batchId]": "copyright.readAll",
+  "/demands/new": "demand.create",
+  "/demands/[demandId]": "demand.read",
+  "/demands/[demandId]/edit": "demand.manage",
+  "/demands/[demandId]/find": "demand.read",
 } as const satisfies Record<WorkspaceRouteFamily, Permission>;
 
 const DYNAMIC_ROUTE_FAMILIES = [
@@ -46,6 +50,10 @@ const DYNAMIC_ROUTE_FAMILIES = [
     family: "/copyright/batches/[batchId]",
     pattern: /^\/copyright\/batches\/([^/]+)$/,
   },
+  { family: "/demands/new", pattern: /^\/demands\/new$/ },
+  { family: "/demands/[demandId]/edit", pattern: /^\/demands\/([^/]+)\/edit$/ },
+  { family: "/demands/[demandId]/find", pattern: /^\/demands\/([^/]+)\/find$/ },
+  { family: "/demands/[demandId]", pattern: /^\/demands\/([^/]+)$/ },
 ] as const;
 
 export const PROTECTED_ROUTES = Object.keys(

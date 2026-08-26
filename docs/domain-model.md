@@ -31,6 +31,14 @@ catalog.track
         |----> catalog.track_metadata (canonical searchable values)
         +----> catalog.track_term_assignment ---> catalog.taxonomy_term
         +----> published_revision_id (approved revision selected for publication)
+
+planning.demand
+        |----> planning.demand_term_requirement ---> catalog.taxonomy_term
+        |----> planning.demand_assignee -----------> auth.user
+        |----> planning.demand_reference_track ----> catalog.track
+        |----> planning.demand_response ------------> catalog.track
+        |                         +------------------> workflow.submission (optional)
+        +----> planning.demand_event (append-only)
 ```
 
 ## Composition and Track
@@ -92,3 +100,17 @@ structured items, and append-only `catalog.track_publication_event` history.
 The bounded decision snapshot excludes storage and provider secrets.
 `decisioned` is terminal for that reviewed Revision; `superseded` continues to
 mean a newer Revision replaced it.
+
+## Demand planning
+
+A Demand is a future internal need, not a Track or Submission state. Its five
+persisted lifecycle values remain separate from derived deadline and coverage
+conditions. Requirements reference the existing canonical taxonomy; references
+and responses point to stable Tracks. A submission-origin response additionally
+points to a Submission whose Track is enforced by a database trigger.
+
+Responses snapshot both Demand brief version and published Revision. Accepted
+responses count only while the exact Revision remains published and current
+canonical fields pass the centralized Required fit evaluation. Demand
+shortlisting, acceptance and fulfillment never mutate Track metadata,
+Submission state or publication.

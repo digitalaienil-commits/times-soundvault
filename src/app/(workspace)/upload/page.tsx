@@ -11,6 +11,8 @@ import {
   getRevisionUploadContext,
 } from "@/lib/domain/uploads/uploads";
 import { parseStorageConfig, toPublicUploadConfig } from "@/lib/storage/config";
+import { getUploadDemandContext } from "@/lib/demands/repository";
+import { getDatabase } from "@/lib/database/database";
 
 export const metadata: Metadata = {
   title: "Upload",
@@ -19,27 +21,41 @@ export const metadata: Metadata = {
 export default async function UploadPage({
   searchParams,
 }: {
-  searchParams: Promise<{ submissionId?: string }>;
+  searchParams: Promise<{ submissionId?: string; demandId?: string }>;
 }) {
   const user = await requireRouteAccess("/upload");
-  const { submissionId: rawSubmissionId } = await searchParams;
+  const { submissionId: rawSubmissionId, demandId: rawDemandId } =
+    await searchParams;
   const submissionId = rawSubmissionId
     ? z.uuid().safeParse(rawSubmissionId)
     : null;
   if (submissionId && !submissionId.success) notFound();
-  const [batches, config, revisionContext] = await Promise.all([
+  const demandId = rawDemandId ? z.uuid().safeParse(rawDemandId) : null;
+  if (demandId && !demandId.success) notFound();
+  if (submissionId?.success && demandId?.success) notFound();
+  const [batches, config, revisionContext, demandContext] = await Promise.all([
     getResumableUploadBatches(user),
     Promise.resolve(toPublicUploadConfig(parseStorageConfig())),
     submissionId?.success
       ? getRevisionUploadContext(submissionId.data, user)
       : Promise.resolve(undefined),
+    demandId?.success
+      ? getUploadDemandContext(getDatabase(), demandId.data, user)
+      : Promise.resolve(undefined),
   ]);
   if (submissionId?.success && !revisionContext) notFound();
+  if (demandId?.success && !demandContext) notFound();
 
   return (
     <>
       <PageHeader
-        title={revisionContext ? "Revise submission" : "Upload music"}
+        title={
+          revisionContext
+            ? "Revise submission"
+            : demandContext
+              ? "Create new Track for Demand"
+              : "Upload music"
+        }
         description={
           revisionContext
             ? "Upload a new immutable Revision with one Master and optional replacement Stems."
@@ -50,6 +66,7 @@ export default async function UploadPage({
       <UploadWorkspace
         config={config}
         revisionContext={revisionContext ?? undefined}
+        demandContext={demandContext ?? undefined}
       />
     </>
   );

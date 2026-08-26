@@ -19,7 +19,11 @@ export type WorkspaceRouteFamily =
   | "/review/[submissionId]"
   | "/submissions/[submissionId]"
   | "/library/[trackId]"
-  | "/copyright/batches/[batchId]";
+  | "/copyright/batches/[batchId]"
+  | "/demands/new"
+  | "/demands/[demandId]"
+  | "/demands/[demandId]/edit"
+  | "/demands/[demandId]/find";
 
 export interface NavigationItem {
   href: WorkspaceRoute;

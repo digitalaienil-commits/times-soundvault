@@ -178,6 +178,14 @@ current published Revision. See
 [docs/media-artifacts.md](docs/media-artifacts.md) and
 [docs/secure-media-delivery.md](docs/secure-media-delivery.md).
 
+Section 11 adds the PostgreSQL-backed Demand Sheet for catalog-first internal
+music briefs, governed new production, private Producer responses and explicit
+fit-checked fulfillment. It reuses the Section 9 search and Section 10 media
+boundary and adds no external notification or matching provider. See
+[docs/demand-sheet.md](docs/demand-sheet.md),
+[docs/demand-response-workflow.md](docs/demand-response-workflow.md) and
+[docs/demand-fit-governance.md](docs/demand-fit-governance.md).
+
 Section 4 storage is behind a server-only adapter. Local development writes
 generated object keys beneath an ignored private root, verifies exact size and
 WAV/MP3 signatures, and atomically publishes completed files. The OneDrive

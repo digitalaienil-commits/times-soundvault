@@ -149,9 +149,28 @@ export interface TrackPackageDraftInput {
 export interface CreateUploadBatchInput {
   idempotencyKey: string;
   revisionSubmissionId?: string;
+  demandId?: string;
   label?: string;
   acknowledgementAccepted: boolean;
   packages: TrackPackageDraftInput[];
+}
+
+export interface DemandUploadContext {
+  demandId: string;
+  displayNumber: string;
+  title: string;
+  neededByOn: string;
+  requiredTerms: Array<{ id: string; label: string }>;
+  preferredTerms: Array<{ id: string; label: string }>;
+  bpmMin: number | null;
+  bpmMax: number | null;
+  durationMinMs: number | null;
+  durationMaxMs: number | null;
+  vocalState: string | null;
+  underDialogue: boolean | null;
+  loopable: boolean | null;
+  stemsRequired: boolean;
+  endingType: string | null;
 }
 
 export interface RevisionUploadContext {
