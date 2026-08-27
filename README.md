@@ -97,6 +97,7 @@ prints safe assignment metadata only.
 | `/demands`                | Admin, Music Producer, Coordinator               |
 | `/team`                   | Admin                                            |
 | `/admin`                  | Admin                                            |
+| `/admin/*`                | Admin                                            |
 
 `/` sends User directly to Library and the three operational roles to
 Dashboard. Generate is intentionally absent from the primary workspace.
@@ -186,6 +187,18 @@ boundary and adds no external notification or matching provider. See
 [docs/demand-response-workflow.md](docs/demand-response-workflow.md) and
 [docs/demand-fit-governance.md](docs/demand-fit-governance.md).
 
+Section 12 adds Admin Operations for system health, team governance links,
+taxonomy administration, catalog maintenance, processing/media queues,
+copyright inspection, Demand supervision, audit, retention and integrity
+findings. Admin Operations provides operational control over the systems
+already built; it does not bypass the underlying business workflows or security
+invariants. See [docs/admin-operations.md](docs/admin-operations.md),
+[docs/team-and-role-management.md](docs/team-and-role-management.md),
+[docs/taxonomy-administration.md](docs/taxonomy-administration.md),
+[docs/catalog-governance.md](docs/catalog-governance.md),
+[docs/system-maintenance.md](docs/system-maintenance.md) and
+[docs/audit-and-retention.md](docs/audit-and-retention.md).
+
 Section 4 storage is behind a server-only adapter. Local development writes
 generated object keys beneath an ignored private root, verifies exact size and
 WAV/MP3 signatures, and atomically publishes completed files. The OneDrive
@@ -217,6 +230,8 @@ proportions. See [public/brand/README.md](public/brand/README.md).
   credentials; automated coverage uses mocked Microsoft Graph responses.
 - YouTube Content ID/CMS automation is not connected or live-tested. Section 6
   uses a manual operational workflow and is API-ready.
+- Section 12 does not implement semantic search, similarity search, AI
+  generation, or production deployment.
 - The OneDrive adapter is covered with mocked HTTP tests. Live Microsoft Graph
   upload testing requires organization credentials and is not performed in CI.
 - Team access sends no invitation email.

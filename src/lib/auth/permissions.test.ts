@@ -24,6 +24,7 @@ describe("four-role permissions", () => {
   it("gives Admin every canonical permission", () => {
     expect(getPermissionsForRole("admin")).toEqual(PERMISSIONS);
     expect(hasAllPermissions("admin", PERMISSIONS)).toBe(true);
+    expect(hasPermission("admin", "admin.manage")).toBe(true);
   });
 
   it("keeps User limited to published-library capabilities", () => {
@@ -51,6 +52,7 @@ describe("four-role permissions", () => {
     expect(hasPermission("coordinator", "submission.approve")).toBe(true);
     expect(hasPermission("coordinator", "demand.manage")).toBe(true);
     expect(hasPermission("coordinator", "team.manage")).toBe(false);
+    expect(hasPermission("coordinator", "admin.manage")).toBe(false);
     expect(hasPermission("coordinator", "copyright.readAll")).toBe(true);
     expect(hasPermission("coordinator", "copyright.record")).toBe(true);
     expect(hasPermission("user", "copyright.readOwn")).toBe(false);

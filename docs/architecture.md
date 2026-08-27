@@ -72,6 +72,19 @@ Provider secrets, OAuth tokens, password hashes and session tokens never cross
 the server boundary. Future audio/provider SDKs remain behind server adapters;
 they are not imported into UI modules.
 
+## Admin operations boundary
+
+`src/features/admin` owns the grouped Section 12 Admin workspace UI and Server
+Actions. `src/lib/admin` owns diagnostics, taxonomy governance, maintenance
+jobs, retention previews and append-only admin audit writes. Admin routes still
+use normal route policy and permission checks; navigation is not authorization.
+
+Admin Operations provides operational control over the systems already built;
+it does not bypass the underlying business workflows or security invariants.
+Maintenance jobs are bounded database records picked up by workers, not shell
+commands from the browser. Retention controls are limited to derived artifacts
+and never override Microsoft 365 SharePoint/OneDrive retention policies.
+
 ## Copyright boundary
 
 `src/lib/copyright` owns manual batch policy, deterministic manifests, private
@@ -113,6 +126,10 @@ boundary:
 - `system`: checksummed domain migration history.
 - `planning`: Demands, controlled requirements, contributor/reference links,
   private responses and append-only events.
+
+Section 12 extends `system` with admin audit events, maintenance jobs,
+integrity findings and worker heartbeats. These records govern operations; they
+do not rewrite catalog, workflow, rights or planning history.
 
 Server-only repositories live below `src/lib/domain` and accept an injected
 PostgreSQL query boundary. They use fully qualified, parameterized SQL and map

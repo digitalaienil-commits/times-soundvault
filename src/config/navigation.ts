@@ -86,6 +86,18 @@ export const workspaceRoutes = [
   "/demands",
   "/team",
   "/admin",
+  "/admin/system",
+  "/admin/team",
+  "/admin/taxonomy",
+  "/admin/catalog",
+  "/admin/submissions",
+  "/admin/processing",
+  "/admin/media",
+  "/admin/copyright",
+  "/admin/demands",
+  "/admin/audit",
+  "/admin/retention",
+  "/admin/integrity",
 ] as const satisfies readonly WorkspaceRoute[];
 
 export function getNavigationForRole(role: unknown): NavigationItem[] {

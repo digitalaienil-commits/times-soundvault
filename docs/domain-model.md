@@ -39,6 +39,13 @@ planning.demand
         |----> planning.demand_response ------------> catalog.track
         |                         +------------------> workflow.submission (optional)
         +----> planning.demand_event (append-only)
+
+system.maintenance_job
+        |----> bounded admin worker request
+system.integrity_finding
+        |----> durable governance issue
+system.admin_audit_event (append-only)
+        |----> admin operation history
 ```
 
 ## Composition and Track
@@ -114,3 +121,12 @@ responses count only while the exact Revision remains published and current
 canonical fields pass the centralized Required fit evaluation. Demand
 shortlisting, acceptance and fulfillment never mutate Track metadata,
 Submission state or publication.
+
+## Admin operations
+
+Admin Operations adds no new business lifecycle. It observes and governs the
+existing catalog, workflow, rights, media, analysis and planning aggregates.
+Taxonomy deactivation preserves historical assignments and only prevents new
+selection; historical data is not deleted. Derived artifacts may be safely
+reconciled or cleaned, but source Masters and Stems are not casually deleted by
+the Admin UI.

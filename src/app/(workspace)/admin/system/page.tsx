@@ -1,34 +1,27 @@
 import type { Metadata } from "next";
 
 import { AdminWorkspace } from "@/features/admin/components/admin-workspace";
-import { requireRouteAccess } from "@/lib/auth/current-user";
-import { getAdminOverview } from "@/lib/admin/service";
 import { getSystemHealthItems } from "@/lib/admin/diagnostics";
-import { listAdminMaintenanceJobs } from "@/lib/admin/maintenance";
+import { requireRouteAccess } from "@/lib/auth/current-user";
 
 export const metadata: Metadata = {
-  title: "Admin Operations",
+  title: "System Health",
 };
 
-export default async function AdminPage({
+export default async function AdminSystemPage({
   searchParams,
 }: {
   searchParams: Promise<{ notice?: string; error?: string }>;
 }) {
-  await requireRouteAccess("/admin");
-  const [params, metrics, health, jobs] = await Promise.all([
+  await requireRouteAccess("/admin/system");
+  const [params, health] = await Promise.all([
     searchParams,
-    getAdminOverview(),
     getSystemHealthItems(),
-    listAdminMaintenanceJobs(),
   ]);
-
   return (
     <AdminWorkspace
-      section="overview"
-      metrics={metrics}
+      section="system"
       health={health}
-      jobs={jobs}
       notice={params.notice}
       error={params.error}
     />

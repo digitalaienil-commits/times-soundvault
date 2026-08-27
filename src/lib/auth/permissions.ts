@@ -25,6 +25,7 @@ export const PERMISSIONS = [
   "demand.respond",
   "team.read",
   "team.manage",
+  "admin.manage",
   "providers.manage",
   "system.manage",
   "audit.read",

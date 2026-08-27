@@ -13,7 +13,19 @@ export const ROUTE_PERMISSIONS = {
   "/copyright": "copyright.readAll",
   "/demands": "demand.read",
   "/team": "team.read",
-  "/admin": "system.manage",
+  "/admin": "admin.manage",
+  "/admin/system": "admin.manage",
+  "/admin/team": "team.manage",
+  "/admin/taxonomy": "admin.manage",
+  "/admin/catalog": "admin.manage",
+  "/admin/submissions": "admin.manage",
+  "/admin/processing": "admin.manage",
+  "/admin/media": "admin.manage",
+  "/admin/copyright": "admin.manage",
+  "/admin/demands": "admin.manage",
+  "/admin/audit": "audit.read",
+  "/admin/retention": "admin.manage",
+  "/admin/integrity": "admin.manage",
 } as const satisfies Record<WorkspaceRoute, Permission>;
 
 export const ROUTE_FAMILY_PERMISSIONS = {
