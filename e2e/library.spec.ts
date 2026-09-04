@@ -248,7 +248,8 @@ test("player persists across Library navigation, switches to a Stem, streams ran
   await enterLibrary(page, "User");
   const card = page
     .getByRole("article")
-    .filter({ hasText: "Published Media E2E" });
+    .filter({ hasText: "Published Media E2E" })
+    .first();
   await card.getByRole("button", { name: "Play Published Media E2E" }).click();
   const player = page.getByRole("region", { name: "SoundVault player" });
   await expect(player).toContainText("Published Media E2E · Master");

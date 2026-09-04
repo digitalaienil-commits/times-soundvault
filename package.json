@@ -31,6 +31,10 @@
     "catalog:search:rebuild": "node --conditions=react-server --import tsx scripts/catalog-search-rebuild.ts",
     "catalog:search:status": "node --conditions=react-server --import tsx scripts/catalog-search-status.ts",
     "catalog:search:benchmark": "node --conditions=react-server --import tsx scripts/catalog-search-benchmark.ts",
+    "embedding:worker": "node --conditions=react-server --import tsx scripts/embedding-worker.ts",
+    "embedding:once": "node --conditions=react-server --import tsx scripts/embedding-once.ts",
+    "embedding:reconcile": "node --conditions=react-server --import tsx scripts/embedding-reconcile.ts",
+    "embedding:status": "node --conditions=react-server --import tsx scripts/embedding-status.ts",
     "media:worker": "node --conditions=react-server --import tsx scripts/media-worker.ts",
     "media:once": "node --conditions=react-server --import tsx scripts/media-once.ts",
     "media:reconcile": "node --conditions=react-server --import tsx scripts/media-reconcile.ts",
@@ -53,6 +57,7 @@
   },
   "dependencies": {
     "@azure/identity": "^4.13.2",
+    "@google/genai": "^2.20.0",
     "archiver": "8.0.0",
     "better-auth": "1.6.29",
     "class-variance-authority": "^0.7.1",

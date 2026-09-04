@@ -3,7 +3,8 @@ import { loadEnvConfig } from "@next/env";
 
 loadEnvConfig(process.cwd());
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+const port = process.env.PORT ?? process.env.PLAYWRIGHT_PORT ?? "3005";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -25,9 +26,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev --hostname localhost",
+    command: `pnpm dev --hostname localhost --port ${port}`,
     url: `${baseURL}/sign-in`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
+    env: {
+      PORT: port,
+      BETTER_AUTH_URL: baseURL,
+      AUTH_TRUSTED_ORIGINS: baseURL,
+    },
   },
 });

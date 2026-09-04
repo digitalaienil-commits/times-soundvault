@@ -128,7 +128,14 @@ function normalizeIdentifier(value: string): string {
   return value.toLocaleLowerCase("en").replace(/[^a-z0-9]/g, "");
 }
 
-function buildSearchSql(input: CatalogSearchInput) {
+export interface SearchSqlOptions {
+  queryVector?: number[] | null;
+  provider?: string;
+  model?: string;
+  dimension?: number;
+}
+
+function buildSearchSql(input: CatalogSearchInput, options?: SearchSqlOptions) {
   const values: unknown[] = [];
   const bind = (value: unknown, cast = "") => {
     values.push(value);
@@ -141,6 +148,19 @@ function buildSearchSql(input: CatalogSearchInput) {
   const titleParameter = bind(normalizedQuery, "::text");
   const identifierParameter = bind(normalizedIdentifier, "::text");
 
+  let vectorParam: string | null = null;
+  let providerParam: string | null = null;
+  let modelParam: string | null = null;
+  let dimensionParam: string | null = null;
+
+  if (options?.queryVector && options.queryVector.length > 0) {
+    const vectorLiteral = `[${options.queryVector.join(",")}]`;
+    vectorParam = bind(vectorLiteral, "::vector");
+    providerParam = bind(options.provider ?? "gemini", "::text");
+    modelParam = bind(options.model ?? "gemini-embedding-2", "::text");
+    dimensionParam = bind(options.dimension ?? 768, "::int");
+  }
+
   if (input.query) {
     const textMatches = [
       `document.search_vector @@ query_input.query`,
@@ -152,6 +172,11 @@ function buildSearchSql(input: CatalogSearchInput) {
       textMatches.push(
         `document.title_normalized LIKE '%' || ${titleParameter} || '%'`,
         `document.title_normalized % ${titleParameter}`,
+      );
+    }
+    if (vectorParam) {
+      textMatches.push(
+        `(embedding.embedding IS NOT NULL AND (embedding.embedding <=> ${vectorParam}) < ${CATALOG_SEARCH_RANKING.semanticDistanceThreshold})`,
       );
     }
     conditions.push(`(${textMatches.join(" OR ")})`);
@@ -240,7 +265,7 @@ function buildSearchSql(input: CatalogSearchInput) {
     )`);
   }
 
-  const relevance = input.query
+  const lexicalRelevance = input.query
     ? `(
         CASE WHEN document.title_normalized = ${titleParameter} THEN ${CATALOG_SEARCH_RANKING.exactTitle} ELSE 0 END
         + CASE WHEN ${identifierParameter} = ANY(document.identifier_values) THEN ${CATALOG_SEARCH_RANKING.exactIdentifier} ELSE 0 END
@@ -254,6 +279,11 @@ function buildSearchSql(input: CatalogSearchInput) {
                ELSE 0 END
       )`
     : "0::real";
+
+  const relevance = vectorParam
+    ? `((${lexicalRelevance} * ${CATALOG_SEARCH_RANKING.hybridLexicalWeight}) + (CASE WHEN embedding.embedding IS NOT NULL THEN (1.0 - (embedding.embedding <=> ${vectorParam})) * 10.0 * ${CATALOG_SEARCH_RANKING.hybridSemanticWeight} ELSE 0.0 END))`
+    : lexicalRelevance;
+
   const effectiveSort =
     input.sort === "relevance" && !input.query ? "newest" : input.sort;
   const limit = bind(input.pageSize, "::int");
@@ -360,6 +390,18 @@ function buildSearchSql(input: CatalogSearchInput) {
       LEFT JOIN stem_summary stems ON stems.track_id = track.id
       LEFT JOIN accepted_terms ON accepted_terms.track_id = track.id
       LEFT JOIN playback_summary playback ON playback.track_id = track.id
+      ${
+        vectorParam
+          ? `LEFT JOIN catalog.track_embedding embedding
+               ON embedding.track_id = track.id
+              AND embedding.published_revision_id = track.published_revision_id
+              AND embedding.status = 'ready'
+              AND embedding.provider = ${providerParam}
+              AND embedding.model = ${modelParam}
+              AND embedding.dimension = ${dimensionParam}
+              AND embedding.embedding IS NOT NULL`
+          : ""
+      }
       WHERE ${conditions.join("\n        AND ")}
     ),
     page AS (
@@ -382,8 +424,9 @@ function buildSearchSql(input: CatalogSearchInput) {
 export async function searchPublishedCatalogRows(
   database: Queryable,
   input: CatalogSearchInput,
+  options?: SearchSqlOptions,
 ): Promise<{ items: CatalogSearchItem[]; total: number }> {
-  const query = buildSearchSql(input);
+  const query = buildSearchSql(input, options);
   const result = await database.query<SearchRow>(query.sql, query.values);
   let total = result.rows[0] ? Number(result.rows[0].total_count) : 0;
   if (!result.rows.length && input.page > 1) {
@@ -400,6 +443,116 @@ export async function searchPublishedCatalogRows(
     }),
     total,
   };
+}
+
+export async function getPublishedTracksByIds(
+  database: Queryable,
+  trackIds: string[],
+): Promise<CatalogSearchItem[]> {
+  if (!trackIds.length) return [];
+  const mediaProfileVersion = parseMediaConfig().profileVersion;
+  const result = await database.query<SearchRow>(
+    `WITH master_technical AS (
+      SELECT DISTINCT ON (track.id)
+             track.id AS track_id, result.duration_ms
+      FROM catalog.track track
+      JOIN catalog.audio_asset asset
+        ON asset.track_id = track.id
+       AND asset.submission_revision_id = track.published_revision_id
+       AND asset.asset_role = 'master'
+      JOIN analysis.file_technical_result result
+        ON result.asset_id = asset.id
+       AND result.submission_revision_id = track.published_revision_id
+      WHERE track.publication_status = 'published'
+        AND track.id = ANY($1::uuid[])
+      ORDER BY track.id, result.processed_at DESC, result.audio_file_id
+    ),
+    stem_summary AS (
+      SELECT track.id AS track_id, count(asset.id)::int AS stem_count
+      FROM catalog.track track
+      JOIN catalog.audio_asset asset
+        ON asset.track_id = track.id
+       AND asset.submission_revision_id = track.published_revision_id
+       AND asset.asset_role = 'stem'
+      WHERE track.publication_status = 'published'
+        AND track.id = ANY($1::uuid[])
+      GROUP BY track.id
+    ),
+    accepted_terms AS (
+      SELECT assignment.track_id,
+             jsonb_agg(
+               jsonb_build_object('category', term.category, 'slug', term.slug, 'label', term.label)
+               ORDER BY term.category, term.label, term.id
+             ) AS terms
+      FROM catalog.track_term_assignment assignment
+      JOIN catalog.taxonomy_term term
+        ON term.id = assignment.term_id
+       AND term.is_active = true
+      WHERE assignment.review_status = 'accepted'
+        AND assignment.track_id = ANY($1::uuid[])
+      GROUP BY assignment.track_id
+    ),
+    playback_summary AS (
+      SELECT track.id AS track_id,
+             CASE
+               WHEN count(asset.id) FILTER (WHERE artifact.status='ready') = count(asset.id)
+                    AND count(asset.id) > 0 THEN 'ready'
+               WHEN count(asset.id) FILTER (WHERE artifact.status='ready') > 0 THEN 'partial'
+               WHEN bool_or(artifact.status='failed') THEN 'failed'
+               ELSE 'preparing'
+             END AS playback_status,
+             bool_or(asset.asset_role='master' AND artifact.status='ready')
+               AS master_playback_ready
+      FROM catalog.track track
+      JOIN catalog.audio_asset asset
+        ON asset.track_id=track.id
+       AND asset.submission_revision_id=track.published_revision_id
+      LEFT JOIN media.playback_artifact artifact
+        ON artifact.audio_asset_id=asset.id
+       AND artifact.submission_revision_id=track.published_revision_id
+       AND artifact.profile_version=$2
+      WHERE track.publication_status='published'
+        AND track.id = ANY($1::uuid[])
+      GROUP BY track.id
+    )
+    SELECT track.id AS track_id,
+           track.published_revision_id,
+           track.title,
+           track.description,
+           track.asset_kind,
+           track.version_type,
+           track.version_label,
+           track.published_at,
+           metadata.description_caption,
+           metadata.bpm,
+           metadata.key_tonic,
+           metadata.key_mode,
+           metadata.energy_score,
+           metadata.vocal_state,
+           metadata.language_code,
+           metadata.under_dialogue,
+           metadata.loopable,
+           metadata.ending_type,
+           master.duration_ms,
+           coalesce(stems.stem_count, 0) AS stem_count,
+           coalesce(accepted_terms.terms, '[]'::jsonb) AS terms,
+           coalesce(playback.playback_status,'preparing') AS playback_status,
+           coalesce(playback.master_playback_ready,false) AS master_playback_ready,
+           0::real AS relevance,
+           1::bigint AS total_count
+    FROM catalog.track track
+    LEFT JOIN catalog.track_metadata metadata ON metadata.track_id = track.id
+    LEFT JOIN master_technical master ON master.track_id = track.id
+    LEFT JOIN stem_summary stems ON stems.track_id = track.id
+    LEFT JOIN accepted_terms ON accepted_terms.track_id = track.id
+    LEFT JOIN playback_summary playback ON playback.track_id = track.id
+    WHERE track.id = ANY($1::uuid[])
+      AND track.publication_status = 'published'`,
+    [trackIds, mediaProfileVersion],
+  );
+  return result.rows
+    .map(mapSearchRow)
+    .filter((item): item is CatalogSearchItem => item !== null);
 }
 
 export async function listPublishedCatalogFacets(

@@ -20,7 +20,14 @@ describe("server route policy", () => {
   it.each([
     [
       "music_producer",
-      ["/dashboard", "/library", "/my-uploads", "/upload", "/demands"],
+      [
+        "/dashboard",
+        "/library",
+        "/my-uploads",
+        "/upload",
+        "/generate",
+        "/demands",
+      ],
     ],
     [
       "coordinator",
@@ -29,6 +36,7 @@ describe("server route policy", () => {
         "/library",
         "/my-uploads",
         "/upload",
+        "/generate",
         "/review",
         "/copyright",
         "/demands",

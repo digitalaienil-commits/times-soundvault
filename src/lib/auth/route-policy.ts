@@ -9,6 +9,7 @@ export const ROUTE_PERMISSIONS = {
   "/library": "library.read",
   "/my-uploads": "submission.readOwn",
   "/upload": "submission.create",
+  "/generate": "generation.create",
   "/review": "submission.review",
   "/copyright": "copyright.readAll",
   "/demands": "demand.read",

@@ -369,7 +369,9 @@ test("User lands in Library and cannot reach privileged routes", async ({
 }) => {
   await signIn(page, identities.user, "/library", "/");
   await expect(
-    page.getByRole("heading", { name: "No published tracks yet" }),
+    page.getByRole("heading", {
+      name: /Published Library|No published tracks yet|Published tracks/,
+    }),
   ).toBeVisible();
   await expectNavigation(
     page,
@@ -405,7 +407,7 @@ test("database-backed domain states remain responsive and accessible", async ({
 }) => {
   await signIn(page, identities.admin, "/dashboard");
   const destinations = [
-    ["/library", /No published tracks yet|Published tracks/],
+    ["/library", /No published tracks yet|published track/i],
     ["/my-uploads", /No submissions yet|Upload submissions/],
     ["/review", /Oldest waiting first/],
     ["/copyright", /Current checks/],

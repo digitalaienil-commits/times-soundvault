@@ -6,6 +6,9 @@ export const CATALOG_SEARCH_RANKING = {
   coverDensityMultiplier: 5,
   titleSimilarityMultiplier: 2,
   trigramMinimumLength: 3,
+  hybridLexicalWeight: 0.6,
+  hybridSemanticWeight: 0.4,
+  semanticDistanceThreshold: 0.5,
 } as const;
 
 export const CATALOG_SEARCH_WEIGHTS = {

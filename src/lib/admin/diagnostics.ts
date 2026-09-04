@@ -4,6 +4,7 @@ import type { QueryResultRow } from "pg";
 
 import { getDatabase } from "@/lib/database/database";
 import { parseCyaniteConfig } from "@/lib/analysis/cyanite/config";
+import { parseGenerationConfig } from "@/lib/generation/config";
 import { parseMediaConfig } from "@/lib/media/config";
 import { parseStorageConfig } from "@/lib/storage/config";
 
@@ -157,6 +158,94 @@ export async function getSystemHealthItems(): Promise<AdminHealthItem[]> {
       status: "unknown",
       summary: "Copyright status unavailable",
       detail: error instanceof Error ? error.message : "Copyright check failed",
+    });
+  }
+
+  // Section 13: PGVector & Track Embeddings
+  try {
+    const extResult = await database.query<
+      { extversion: string } & QueryResultRow
+    >("SELECT extversion FROM pg_extension WHERE extname = 'vector'");
+    const hasVectorExt = extResult.rows.length > 0;
+    const extVersion = extResult.rows[0]?.extversion ?? "none";
+
+    const embStatsResult = await database.query<
+      {
+        total_published: string;
+        ready_count: string;
+        queued_count: string;
+        stale_count: string;
+        failed_count: string;
+      } & QueryResultRow
+    >(
+      `SELECT
+         (SELECT count(*)::text FROM catalog.track WHERE publication_status = 'published') AS total_published,
+         count(*) FILTER (WHERE status = 'ready')::text AS ready_count,
+         count(*) FILTER (WHERE status = 'queued')::text AS queued_count,
+         count(*) FILTER (WHERE status = 'stale')::text AS stale_count,
+         count(*) FILTER (WHERE status = 'failed')::text AS failed_count
+       FROM catalog.track_embedding`,
+    );
+
+    const stats = embStatsResult.rows[0];
+    const ready = Number(stats?.ready_count ?? 0);
+    const totalPub = Number(stats?.total_published ?? 0);
+    const queued = Number(stats?.queued_count ?? 0);
+    const stale = Number(stats?.stale_count ?? 0);
+    const failed = Number(stats?.failed_count ?? 0);
+
+    let status: AdminHealthState = "healthy";
+    if (!hasVectorExt) status = "degraded";
+    else if (failed > 0) status = "warning";
+    else if (queued > 0 || stale > 0) status = "healthy";
+
+    items.push({
+      key: "embeddings",
+      label: "PGVector & Embeddings",
+      status,
+      summary: hasVectorExt
+        ? `${ready}/${totalPub} published tracks embedded (v${extVersion})`
+        : "pgvector extension missing",
+      detail: hasVectorExt
+        ? `Ready: ${ready}, Queued: ${queued}, Stale: ${stale}, Failed: ${failed}. HNSW indexing active.`
+        : "The pgvector extension is not installed in the PostgreSQL database.",
+    });
+  } catch (error) {
+    items.push({
+      key: "embeddings",
+      label: "PGVector & Embeddings",
+      status: "unknown",
+      summary: "Embeddings status unavailable",
+      detail:
+        error instanceof Error ? error.message : "Embeddings check failed",
+    });
+  }
+
+  // Section 13: AI Generation Provider
+  try {
+    const genConfig = parseGenerationConfig();
+    const hasKey =
+      genConfig.provider === "google_lyria"
+        ? Boolean(genConfig.geminiApiKey)
+        : Boolean(genConfig.elevenLabsApiKey);
+
+    items.push({
+      key: "generation",
+      label: "AI Generation",
+      status: "healthy",
+      summary: genConfig.dryRun
+        ? "Dry Run (Simulated Audio)"
+        : "Live Provider Active",
+      detail: `Active Provider: ${genConfig.provider}. Dry-run: ${genConfig.dryRun ? "Enabled (Zero Cost)" : "Disabled"}. Credentials: ${hasKey ? "Present" : "Simulated fallback"}.`,
+    });
+  } catch (error) {
+    items.push({
+      key: "generation",
+      label: "AI Generation",
+      status: "unknown",
+      summary: "Generation config unavailable",
+      detail:
+        error instanceof Error ? error.message : "Generation check failed",
     });
   }
 

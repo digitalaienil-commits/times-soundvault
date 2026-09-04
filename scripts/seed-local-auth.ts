@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { hashPassword } from "better-auth/crypto";
 
 import { createSoundVaultAuth } from "@/lib/auth/auth-factory";
 import {
@@ -29,9 +30,14 @@ async function seedIdentity(
   );
   if (existingUser.rows[0]) {
     const user = existingUser.rows[0];
+    const hashedPassword = await hashPassword(identity.password);
     await pool.query(
       `UPDATE auth."user" SET role = $2, name = $3, "updatedAt" = now() WHERE id = $1`,
       [user.id, role, identity.name],
+    );
+    await pool.query(
+      `UPDATE auth.account SET password = $1, "updatedAt" = now() WHERE "userId" = $2 AND "providerId" = 'credential'`,
+      [hashedPassword, user.id],
     );
     if (assignment.status !== "active") {
       const account = await pool.query<{ accountId: string }>(

@@ -81,6 +81,7 @@ export const workspaceRoutes = [
   "/library",
   "/my-uploads",
   "/upload",
+  "/generate",
   "/review",
   "/copyright",
   "/demands",

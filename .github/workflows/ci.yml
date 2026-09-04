@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17-alpine
+        image: pgvector/pgvector:pg17-alpine
         env:
           POSTGRES_DB: soundvault
           POSTGRES_USER: soundvault
@@ -88,7 +88,7 @@ jobs:
 
       - name: Prepare empty authentication database
         run: |
-          docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
+          docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
           pnpm auth:migrate
           pnpm domain:migrate
           pnpm domain:status
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17-alpine
+        image: pgvector/pgvector:pg17-alpine
         env:
           POSTGRES_DB: soundvault
           POSTGRES_USER: soundvault
@@ -205,7 +205,7 @@ jobs:
 
       - name: Prepare and seed authentication database
         run: |
-          docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
+          docker exec ${{ job.services.postgres.id }} psql -U soundvault -d soundvault -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector; CREATE SCHEMA IF NOT EXISTS auth; ALTER ROLE soundvault SET search_path TO auth, public;"
           pnpm auth:migrate
           pnpm domain:migrate
           pnpm domain:status
