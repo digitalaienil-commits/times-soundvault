@@ -29,7 +29,7 @@ export function buildFileQcIssues(input: {
       audioFileId: input.audioFileId,
       code: "master_long_duration",
       severity: "warning",
-      message: "Master exceeds Cyanite's standard 15-minute analysis limit.",
+      message: "Master duration is longer than the standard review target.",
       details: { durationMs: input.durationMs },
     });
   }

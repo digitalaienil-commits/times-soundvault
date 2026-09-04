@@ -38,7 +38,7 @@ without loading raw provider results or full technical detail.
 The detail route combines safe normalized data in one server-owned read model:
 
 - secure Master and Stem previews with authenticated byte-range streaming;
-- Producer, embedded and Cyanite metadata comparison;
+- Producer, embedded and AI metadata comparison;
 - Coordinator scalar-field and controlled-taxonomy draft;
 - verified technical metrics and immutable QC issues;
 - declared rights and current manual copyright/Content ID state;
@@ -56,7 +56,7 @@ item Pass. Attention requires a note; Stems may be Not Applicable only when no
 stems exist. Music requires explicit review of title, vocal state and format,
 plus at least one active Use Case selection.
 
-Ready for Decision does not require Cyanite success, a claim-free copyright
+Ready for Decision does not require AI analysis success, a claim-free copyright
 result, Content ID eligibility or all-Pass checklist state. Legitimate attention
 items are carried into the stable server-only `ReviewDecisionPacket`. The
 assigned Coordinator or Admin may reopen while the current Revision is still

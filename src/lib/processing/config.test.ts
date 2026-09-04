@@ -9,7 +9,7 @@ describe("processing configuration", () => {
   });
   it("rejects browser-exposed processing variables", () => {
     expect(() =>
-      parseProcessingConfig({ NEXT_PUBLIC_CYANITE_TOKEN: "secret" }),
+      parseProcessingConfig({ NEXT_PUBLIC_PROCESSING_TOKEN: "secret" }),
     ).toThrow(/never/);
   });
 });

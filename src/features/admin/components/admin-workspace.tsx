@@ -86,7 +86,7 @@ const sections = [
     key: "processing",
     href: "/admin/processing",
     title: "Processing",
-    description: "Technical and Cyanite queues",
+    description: "Technical and AI queues",
     icon: Database,
   },
   {
@@ -151,7 +151,7 @@ const sectionCopy: Record<
   system: {
     title: "System Health",
     description:
-      "Run operational checks for database, storage, search, workers, Cyanite, OneDrive, media, and copyright configuration.",
+      "Run operational checks for database, storage, search, workers, AI analysis, OneDrive, media, and copyright configuration.",
   },
   team: {
     title: "Team Governance",
@@ -176,7 +176,7 @@ const sectionCopy: Record<
   processing: {
     title: "Processing Operations",
     description:
-      "Inspect technical processing and Cyanite jobs, reclaim expired leases, and queue bounded maintenance.",
+      "Inspect technical processing and AI jobs, reclaim expired leases, and queue bounded maintenance.",
   },
   media: {
     title: "Media Operations",

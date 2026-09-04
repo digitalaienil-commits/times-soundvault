@@ -16,7 +16,7 @@ Accepted copyright outcomes are `no_claim_observed`,
 `existing_internal_claim` and explicit `not_applicable`. Third-party claims,
 ownership conflicts, reference overlap, strikes, inconclusive outcomes, failed
 or pending checks block publication. “No claim observed” is a recorded manual
-observation, not proof of copyright clearance. Cyanite and future Content ID
+observation, not proof of copyright clearance. AI analysis and future Content ID
 eligibility do not gate Section 8 publication.
 
 There is no Admin bypass. Coordinator and Admin may publish a gate-valid

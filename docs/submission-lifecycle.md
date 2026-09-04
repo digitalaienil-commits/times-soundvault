@@ -34,7 +34,7 @@ These states are intentionally separate:
   failed;
 - publication: unpublished, published, withdrawn or archived.
 
-“Published”, “copyright clear”, “Cyanite complete” and “upload complete” are not
+“Published”, “copyright clear”, “AI analysis complete” and “upload complete” are not
 Submission statuses. Section 3 defines processing contracts but does not add
 provider tables, SDKs or fake provider runs.
 

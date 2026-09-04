@@ -148,7 +148,7 @@ function MetadataReview({ aggregate }: { aggregate: ReviewAggregate }) {
       {aggregate.aiStatus === "disabled" ||
       aggregate.aiStatus === "not_started" ? (
         <p className="mt-3 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-          Cyanite not configured
+          AI analysis not configured
         </p>
       ) : aggregate.aiStatus === "failed" ? (
         <p className="mt-3 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
@@ -196,7 +196,7 @@ function MetadataReview({ aggregate }: { aggregate: ReviewAggregate }) {
                     <div key={source} className="rounded-md bg-muted p-3">
                       <dt className="text-xs font-medium text-muted-foreground">
                         {source === "ai"
-                          ? "Cyanite suggestion"
+                          ? "AI suggestion"
                           : source[0]!.toUpperCase() + source.slice(1)}
                       </dt>
                       <dd className="mt-1 text-sm text-foreground">
@@ -227,7 +227,7 @@ function MetadataReview({ aggregate }: { aggregate: ReviewAggregate }) {
                           .map(({ source }) => (
                             <option key={source} value={source}>
                               {source === "ai"
-                                ? "Cyanite suggestion"
+                                ? "AI suggestion"
                                 : `Use ${source} value`}
                             </option>
                           ))}

@@ -5,8 +5,9 @@ review, publication and discovery. Section 2 provides PostgreSQL-backed Better
 Auth, pre-authorised team access, four server-owned roles and a functional Admin
 Team workspace. Section 3 adds the persistent Composition, Track, Submission,
 Revision, asset, metadata and rights foundation. Section 4 adds real private
-WAV/MP3 intake, bulk Track packaging, resumable transfers, technical processing,
-optional Cyanite analysis and a manual-first YouTube copyright workflow.
+WAV/MP3 intake, bulk Track packaging, resumable transfers, local technical
+processing, provider-neutral AI metadata and a manual-first YouTube copyright
+workflow.
 
 ## Role model
 

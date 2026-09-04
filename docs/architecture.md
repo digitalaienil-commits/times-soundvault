@@ -49,7 +49,10 @@ status changes write audit events and revoke target sessions.
 
 ## Runtime shape
 
-Technical audio and provider analysis run outside the request lifecycle in a durable worker. The app and worker share PostgreSQL and private storage, while provider credentials remain behind server adapters. See [Technical processing and Cyanite](technical-processing-cyanite.md).
+Technical audio analysis runs outside the request lifecycle in a durable
+worker. The app and worker share PostgreSQL and private storage, while any
+future AI credentials remain behind server adapters. See
+[Technical processing and AI analysis](technical-processing-ai-analysis.md).
 
 ```text
 Browser
@@ -69,8 +72,8 @@ server libraries connect these existing systems. Demand decisions never write
 catalog metadata or publication state.
 
 Provider secrets, OAuth tokens, password hashes and session tokens never cross
-the server boundary. Future audio/provider SDKs remain behind server adapters;
-they are not imported into UI modules.
+the server boundary. Future audio/AI SDKs remain behind server adapters; they
+are not imported into UI modules.
 
 ## Admin operations boundary
 
@@ -89,8 +92,8 @@ and never override Microsoft 365 SharePoint/OneDrive retention policies.
 
 `src/lib/copyright` owns manual batch policy, deterministic manifests, private
 artifacts, the disabled provider contract and durable job processing. Copyright
-checks live in `rights` and remain independent of Submission, technical/Cyanite
-and publication state. The worker materializes verified Masters through the
+checks live in `rights` and remain independent of Submission, technical
+analysis and publication state. The worker materializes verified Masters through the
 storage adapter and passes explicit arguments to FFmpeg without a shell. Route
 Handlers authorize before opening a private artifact and stream it with
 `private, no-store` caching.

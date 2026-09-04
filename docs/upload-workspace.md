@@ -31,8 +31,8 @@ denied by navigation, route policy and server object checks.
 
 `Submit for Processing` is enabled only after every registered file is received
 and the acknowledgement is present. Submission locks Revision 1 against silent
-metadata changes and appends a workflow event. It does not run Cyanite, FFmpeg,
-YouTube checks, review, approval or publication.
+metadata changes and appends a workflow event. It does not run FFmpeg, AI
+analysis, YouTube checks, review, approval or publication.
 
 ## Operational checks
 

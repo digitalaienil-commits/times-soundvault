@@ -112,9 +112,9 @@ const QUEUE_CTE = `
                AND issue.severity IN ('warning', 'error')
            ) THEN 'warnings' ELSE 'clean' END AS technical_state,
            CASE
-             WHEN analysis.cyanite_status = 'complete' THEN 'complete'
-             WHEN analysis.cyanite_status = 'failed' THEN 'failed'
-             WHEN analysis.cyanite_status IN ('disabled', 'not_started') OR analysis.id IS NULL THEN 'not_configured'
+             WHEN analysis.ai_status = 'complete' THEN 'complete'
+             WHEN analysis.ai_status = 'failed' THEN 'failed'
+             WHEN analysis.ai_status IN ('disabled', 'not_started') OR analysis.id IS NULL THEN 'not_configured'
              ELSE 'partial'
            END AS ai_state,
            CASE
@@ -251,7 +251,7 @@ interface BaseRow extends QueryResultRow {
   row_version: string | null;
   ready_for_decision_at: Date | null;
   fields: Record<string, ReviewFieldDecision> | null;
-  cyanite_status: string | null;
+  ai_status: string | null;
 }
 
 export async function loadReviewAggregate(
@@ -269,7 +269,7 @@ export async function loadReviewAggregate(
             review.id AS review_case_id, review.status AS review_status,
             review.assigned_to_user_id, assignee.name AS assigned_to_name,
             review.row_version, review.ready_for_decision_at,
-            draft.fields, analysis.cyanite_status
+            draft.fields, analysis.ai_status
      FROM workflow.submission submission
      JOIN workflow.submission_revision revision ON revision.id = submission.current_revision_id
      JOIN catalog.track track ON track.id = submission.track_id
@@ -545,7 +545,7 @@ export async function loadReviewAggregate(
     })),
     rights: rights.rows[0] ?? null,
     copyright: copyright.rows[0] ?? null,
-    aiStatus: base.cyanite_status ?? "not_started",
+    aiStatus: base.ai_status ?? "not_started",
     eligibleReviewers: reviewers.rows,
   };
 }

@@ -1,5 +1,5 @@
 export type TechnicalStatus = "pending" | "processing" | "complete" | "failed";
-export type CyaniteStatus =
+export type AiAnalysisStatus =
   | "not_started"
   | "disabled"
   | "preparing"
@@ -15,7 +15,8 @@ export type AnalysisOverallStatus =
   | "complete"
   | "partial"
   | "failed";
-export type ProcessingJobType = "revision_processing" | "cyanite_result_fetch";
+export type ProcessingJobType =
+  "revision_processing" | "legacy_ai_result_fetch";
 export type ProcessingJobStatus =
   "queued" | "running" | "retry_wait" | "succeeded" | "failed" | "cancelled";
 export type QcSeverity = "info" | "warning" | "error";
@@ -104,7 +105,7 @@ export interface ProcessingAnalysisDto {
   submissionRevisionId: string;
   trackId: string;
   technicalStatus: TechnicalStatus;
-  cyaniteStatus: CyaniteStatus;
+  aiStatus: AiAnalysisStatus;
   overallStatus: AnalysisOverallStatus;
   lastErrorCode: string | null;
   lastErrorMessage: string | null;

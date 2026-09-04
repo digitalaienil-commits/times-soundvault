@@ -83,35 +83,3 @@ export async function measureAudioFile(
   });
   return parseFfmpegMeasurements(result.stderr, durationMs);
 }
-
-export async function createCyaniteMp3Derivative(
-  sourcePath: string,
-  destinationPath: string,
-  timeoutMs: number,
-): Promise<void> {
-  await runAudioTool({
-    binary: "ffmpeg",
-    args: [
-      "-nostdin",
-      "-hide_banner",
-      "-protocol_whitelist",
-      "file,pipe",
-      "-i",
-      sourcePath,
-      "-map",
-      "0:a:0",
-      "-vn",
-      "-sn",
-      "-dn",
-      "-map_metadata",
-      "-1",
-      "-c:a",
-      "libmp3lame",
-      "-b:a",
-      "320k",
-      "-y",
-      destinationPath,
-    ],
-    timeoutMs,
-  });
-}

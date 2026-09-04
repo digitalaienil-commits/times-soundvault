@@ -118,7 +118,7 @@ test.beforeAll(async () => {
     );
     await database.query(
       `INSERT INTO analysis.revision_analysis
-       (id,submission_revision_id,track_id,technical_status,cyanite_status,overall_status,technical_completed_at,completed_at)
+       (id,submission_revision_id,track_id,technical_status,ai_status,overall_status,technical_completed_at,completed_at)
        VALUES ($1,$2,$3,'complete','disabled','complete',now(),now())`,
       [randomUUID(), revisionId, trackId],
     );

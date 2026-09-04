@@ -202,7 +202,7 @@ export async function beginRevisionProcessing(
     await client.query(
       `INSERT INTO analysis.revision_analysis (
          id, submission_revision_id, track_id, technical_status,
-         cyanite_status, overall_status, started_at
+         ai_status, overall_status, started_at
        ) VALUES ($1,$2,$3,'processing','not_started','processing',now())
        ON CONFLICT (submission_revision_id) DO UPDATE
          SET technical_status = CASE
@@ -328,8 +328,7 @@ export async function clearTechnicalIssues(
 ): Promise<void> {
   await database.query(
     `DELETE FROM analysis.qc_issue
-     WHERE submission_revision_id = $1
-       AND code NOT IN ('cyanite_unavailable', 'cyanite_unsupported_duration')`,
+     WHERE submission_revision_id = $1`,
     [revisionId],
   );
 }
@@ -523,7 +522,7 @@ export async function finalizeRevisionForReview(
     submissionId: string;
     revisionId: string;
     overallStatus: "complete" | "partial";
-    cyaniteStatus:
+    aiStatus:
       "disabled" | "complete" | "failed" | "skipped_unsupported_duration";
   },
 ): Promise<void> {
@@ -532,11 +531,11 @@ export async function finalizeRevisionForReview(
     await client.query("BEGIN");
     await client.query(
       `UPDATE analysis.revision_analysis
-       SET overall_status = $2, cyanite_status = $3,
+       SET overall_status = $2, ai_status = $3,
            provider_completed_at = CASE WHEN $3 <> 'disabled' THEN now() ELSE provider_completed_at END,
            completed_at = now(), row_version = row_version + 1
        WHERE submission_revision_id = $1 AND technical_status = 'complete'`,
-      [input.revisionId, input.overallStatus, input.cyaniteStatus],
+      [input.revisionId, input.overallStatus, input.aiStatus],
     );
     const transitioned = await client.query(
       `UPDATE workflow.submission
@@ -605,7 +604,7 @@ export async function retryRevisionProcessing(
     await client.query("BEGIN");
     await client.query(
       `UPDATE analysis.revision_analysis
-       SET technical_status = 'pending', cyanite_status = 'not_started',
+       SET technical_status = 'pending', ai_status = 'not_started',
            overall_status = 'queued', last_error_code = NULL,
            last_error_message = NULL, completed_at = NULL,
            row_version = row_version + 1
@@ -671,7 +670,7 @@ export async function loadProcessingAnalysis(
       submission_revision_id: string;
       track_id: string;
       technical_status: ProcessingAnalysisDto["technicalStatus"];
-      cyanite_status: ProcessingAnalysisDto["cyaniteStatus"];
+      ai_status: ProcessingAnalysisDto["aiStatus"];
       overall_status: ProcessingAnalysisDto["overallStatus"];
       last_error_code: string | null;
       last_error_message: string | null;
@@ -688,7 +687,7 @@ export async function loadProcessingAnalysis(
      FROM analysis.revision_analysis revision_analysis
      LEFT JOIN analysis.provider_run provider
        ON provider.submission_revision_id = revision_analysis.submission_revision_id
-      AND provider.provider = 'cyanite'
+      AND provider.provider = 'ai_metadata'
      WHERE revision_analysis.submission_revision_id = $1 LIMIT 1`,
     [revisionId],
   );
@@ -787,7 +786,7 @@ export async function loadProcessingAnalysis(
     submissionRevisionId: row.submission_revision_id,
     trackId: row.track_id,
     technicalStatus: row.technical_status,
-    cyaniteStatus: row.cyanite_status,
+    aiStatus: row.ai_status,
     overallStatus: row.overall_status,
     lastErrorCode: row.last_error_code,
     lastErrorMessage: row.last_error_message,

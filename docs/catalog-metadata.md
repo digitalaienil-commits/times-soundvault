@@ -10,7 +10,7 @@ SoundVault keeps four metadata sources distinct:
 4. future AI suggestions stored by provider-run records in Section 5.
 
 Provider output never overwrites human metadata and never becomes the catalog
-source of truth directly. Raw Cyanite payloads do not belong in
+source of truth directly. Raw AI provider payloads do not belong in
 `producer_metadata`, `embedded_metadata` or required catalog columns.
 
 `catalog.track_metadata` contains the current approved searchable values, with

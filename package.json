@@ -21,8 +21,6 @@
     "processing:worker": "node --conditions=react-server --import tsx scripts/processing-worker.ts",
     "processing:reconcile": "node --conditions=react-server --import tsx scripts/processing-reconcile.ts",
     "processing:cleanup": "node --conditions=react-server --import tsx scripts/processing-cleanup.ts",
-    "cyanite:verify": "node --conditions=react-server --import tsx scripts/cyanite-verify.ts",
-    "cyanite:reconcile": "node --conditions=react-server --import tsx scripts/processing-reconcile.ts",
     "copyright:worker": "node --conditions=react-server --import tsx scripts/copyright-worker.ts",
     "copyright:once": "node --conditions=react-server --import tsx scripts/copyright-once.ts",
     "copyright:reconcile": "node --conditions=react-server --import tsx scripts/copyright-reconcile.ts",

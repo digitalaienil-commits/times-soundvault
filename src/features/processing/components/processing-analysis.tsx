@@ -29,8 +29,8 @@ export function ProcessingAnalysis({
             Technical processing
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {status.charAt(0).toUpperCase() + status.slice(1)} · Cyanite{" "}
-            {analysis.cyaniteStatus.replaceAll("_", " ")}
+            {status.charAt(0).toUpperCase() + status.slice(1)} · AI analysis{" "}
+            {analysis.aiStatus.replaceAll("_", " ")}
           </p>
         </div>
         {analysis.overallStatus === "failed" && canRetry ? (
@@ -128,7 +128,7 @@ export function ProcessingAnalysis({
       ) : null}
       {analysis.normalizedAiResult ? (
         <div className="mt-5">
-          <h3 className="font-semibold">Cyanite suggestions</h3>
+          <h3 className="font-semibold">AI suggestions</h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Suggestions only; canonical metadata is unchanged.
           </p>

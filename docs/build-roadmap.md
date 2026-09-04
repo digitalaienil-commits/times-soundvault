@@ -19,7 +19,7 @@ Status is marked complete only after the section’s required checks pass.
 2. Authentication, Team Access & Role Model — complete
 3. Audio, Catalog & Submission Domain — complete
 4. Producer & Coordinator Upload Workspace — complete
-5. Technical Processing & Cyanite Analysis — complete
+5. Technical Processing & AI Analysis — complete
 6. YouTube Copyright & Content ID Workflow — complete
 7. Coordinator Review Workspace — complete
 8. Approval, Changes, Rejection & Publishing — complete

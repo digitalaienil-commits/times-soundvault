@@ -128,7 +128,7 @@ export async function saveReviewField(input: {
     raw = aggregate.sources.ai[aiKey(input.fieldName)];
     if (input.fieldName === "keyTonic") raw = splitKey(raw, "tonic");
     if (input.fieldName === "keyMode") raw = splitKey(raw, "mode");
-    sourceReference = `cyanite:${aggregate.revisionId}`;
+    sourceReference = `ai:${aggregate.revisionId}`;
   } else {
     throw new ReviewRepositoryError(
       "INVALID_SOURCE",

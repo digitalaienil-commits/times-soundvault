@@ -35,9 +35,9 @@ export function parseProcessingConfig(
   raw: Readonly<Record<string, string | undefined>> = process.env,
 ): ProcessingConfig {
   for (const key of Object.keys(raw)) {
-    if (key.startsWith("NEXT_PUBLIC_") && /PROCESSING|CYANITE/.test(key)) {
+    if (key.startsWith("NEXT_PUBLIC_") && /PROCESSING/.test(key)) {
       throw new Error(
-        "Processing and Cyanite configuration must never use NEXT_PUBLIC_ variables",
+        "Processing configuration must never use NEXT_PUBLIC_ variables",
       );
     }
   }

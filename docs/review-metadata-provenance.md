@@ -5,7 +5,7 @@ SoundVault keeps five metadata layers distinct:
 1. **Producer metadata** is the immutable snapshot submitted with a Revision.
 2. **Embedded metadata** is the submitted or technically verified file-tag
    source and is never rewritten by review.
-3. **AI suggestions** are normalized Cyanite suggestions. They remain
+3. **AI suggestions** are normalized machine suggestions. They remain
    suggestions even when selected by a Coordinator.
 4. **Coordinator review draft** is a revision-bound proposal. Every reviewed
    scalar stores value, source kind, optional source reference, reviewer,

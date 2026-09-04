@@ -5,7 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { calculateFileSha256 } from "./checksum";
-import { createCyaniteMp3Derivative, measureAudioFile } from "./ffmpeg";
+import { measureAudioFile } from "./ffmpeg";
 import { probeAudioFile } from "./ffprobe";
 import { runAudioTool } from "./process";
 
@@ -42,7 +42,31 @@ describe("real FFmpeg processing", () => {
       wavProbe.durationMs,
       20_000,
     );
-    await createCyaniteMp3Derivative(wav, mp3, 20_000);
+    await runAudioTool({
+      binary: "ffmpeg",
+      args: [
+        "-nostdin",
+        "-hide_banner",
+        "-protocol_whitelist",
+        "file,pipe",
+        "-i",
+        wav,
+        "-map",
+        "0:a:0",
+        "-vn",
+        "-sn",
+        "-dn",
+        "-map_metadata",
+        "-1",
+        "-c:a",
+        "libmp3lame",
+        "-b:a",
+        "320k",
+        "-y",
+        mp3,
+      ],
+      timeoutMs: 20_000,
+    });
     const mp3Probe = await probeAudioFile(mp3, 20_000);
     expect(wavProbe.containerFormat).toContain("wav");
     expect(wavProbe.bitDepth).toBe(24);

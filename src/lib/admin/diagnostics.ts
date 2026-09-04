@@ -2,9 +2,8 @@ import "server-only";
 
 import type { QueryResultRow } from "pg";
 
-import { getDatabase } from "@/lib/database/database";
-import { parseCyaniteConfig } from "@/lib/analysis/cyanite/config";
 import { parseGenerationConfig } from "@/lib/generation/config";
+import { getDatabase } from "@/lib/database/database";
 import { parseMediaConfig } from "@/lib/media/config";
 import { parseStorageConfig } from "@/lib/storage/config";
 
@@ -78,26 +77,14 @@ export async function getSystemHealthItems(): Promise<AdminHealthItem[]> {
     }),
   );
 
-  try {
-    const config = parseCyaniteConfig();
-    items.push({
-      key: "cyanite",
-      label: "Cyanite",
-      status: config.enabled ? "healthy" : "disabled",
-      summary: config.enabled ? "Enabled" : "Disabled",
-      detail: config.enabled
-        ? "Cyanite credentials are present without exposing tokens."
-        : "Provider analysis is disabled by environment configuration.",
-    });
-  } catch (error) {
-    items.push({
-      key: "cyanite",
-      label: "Cyanite",
-      status: "degraded",
-      summary: "Configuration needs attention",
-      detail: error instanceof Error ? error.message : "Cyanite check failed",
-    });
-  }
+  items.push({
+    key: "ai-analysis",
+    label: "AI analysis",
+    status: "disabled",
+    summary: "External provider removed",
+    detail:
+      "Technical processing runs locally. AI metadata can be added through the provider-neutral pipeline without exposing secrets to the browser.",
+  });
 
   try {
     const result = await database.query<
