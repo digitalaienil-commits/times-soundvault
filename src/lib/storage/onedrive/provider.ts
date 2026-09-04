@@ -425,7 +425,7 @@ export class OneDriveStorageProvider implements StorageProvider {
     input: StoreGeneratedObjectInput,
   ): Promise<GeneratedStoredObject> {
     if (
-      !/^generated\/(?:previews\/[0-9a-f-]+\.mp3|packages\/[0-9a-f-]+\.zip)$/.test(
+      !/^(?:generated\/(?:previews\/[0-9a-f-]+\.(?:mp3|wav)|packages\/[0-9a-f-]+\.zip)|submissions\/[0-9a-f-]+\/revisions\/[1-9][0-9]*\/[0-9a-f-]+\.(?:mp3|wav))$/.test(
         input.storageKey,
       )
     ) {

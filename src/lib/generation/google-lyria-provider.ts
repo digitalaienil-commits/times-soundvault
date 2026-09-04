@@ -25,6 +25,12 @@ export class GoogleLyriaProvider implements MusicGenerationProvider {
   async generate(
     request: MusicGenerationRequest,
   ): Promise<MusicGenerationResult> {
+    if (request.assetKind !== "music") {
+      throw new MusicGenerationError(
+        "VALIDATION_ERROR",
+        "Google Lyria is available for music generation only.",
+      );
+    }
     const model = request.model || "lyria-3-clip-preview";
     const maxDuration = model === "lyria-3-clip-preview" ? 30 : 180;
     const durationSeconds = Math.max(
@@ -42,6 +48,7 @@ export class GoogleLyriaProvider implements MusicGenerationProvider {
 
       return {
         id: randomUUID(),
+        assetKind: "music",
         audioBuffer,
         mimeType: "audio/wav",
         containerFormat: "wav",
@@ -50,6 +57,7 @@ export class GoogleLyriaProvider implements MusicGenerationProvider {
         model,
         prompt: request.prompt,
         parameters: {
+          assetKind: "music",
           durationSeconds,
           instrumentalOnly: request.instrumentalOnly,
           tempoBpm: request.tempoBpm ?? null,
@@ -64,25 +72,19 @@ export class GoogleLyriaProvider implements MusicGenerationProvider {
 
     // REAL MODE:
     try {
-      // Lyria 3 endpoint via Google GenAI REST API
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateMusic?key=${this.apiKey}`;
-      const payload = {
-        prompt: {
-          text: request.prompt,
-        },
-        generationConfig: {
-          durationSeconds,
-          forceInstrumental: request.instrumentalOnly,
-          ...(request.tempoBpm ? { bpm: request.tempoBpm } : {}),
-          ...(request.seed !== null && request.seed !== undefined
-            ? { seed: request.seed }
-            : {}),
-        },
-      };
+      const endpoint =
+        "https://generativelanguage.googleapis.com/v1beta/interactions";
+      const input = request.instrumentalOnly
+        ? `${request.prompt}\nInstrumental only, no vocals.`
+        : request.prompt;
+      const payload = { model, input };
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": this.apiKey,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -101,12 +103,12 @@ export class GoogleLyriaProvider implements MusicGenerationProvider {
       }
 
       const json = (await response.json()) as {
-        audioContent?: string;
-        audioBytes?: string;
-        format?: string;
+        output_audio?: { data?: string; mime_type?: string; mimeType?: string };
+        outputAudio?: { data?: string; mime_type?: string; mimeType?: string };
       };
 
-      const rawBase64 = json.audioContent || json.audioBytes;
+      const outputAudio = json.output_audio ?? json.outputAudio;
+      const rawBase64 = outputAudio?.data;
       if (!rawBase64) {
         throw new MusicGenerationError(
           "PROVIDER_FAILURE",
@@ -117,17 +119,21 @@ export class GoogleLyriaProvider implements MusicGenerationProvider {
       const audioBuffer = Buffer.from(rawBase64, "base64");
       return {
         id: randomUUID(),
+        assetKind: "music",
         audioBuffer,
-        mimeType: "audio/wav",
-        containerFormat: "wav",
+        mimeType: "audio/mpeg",
+        containerFormat: "mp3",
         durationMs: durationSeconds * 1000,
         provider: this.provider,
         model,
         prompt: request.prompt,
         parameters: {
+          assetKind: "music",
           durationSeconds,
           instrumentalOnly: request.instrumentalOnly,
           tempoBpm: request.tempoBpm ?? null,
+          genre: request.genre ?? null,
+          seed: request.seed ?? null,
           watermark: "SynthID",
         },
         isSimulated: false,

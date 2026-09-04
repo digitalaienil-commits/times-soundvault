@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -195,5 +195,35 @@ describe("local private storage provider", () => {
       completed: false,
     });
     expect(root).not.toContain("public");
+  });
+
+  it("stores generated WAV previews and generated draft source objects", async () => {
+    const { root, provider: storage } = await provider();
+    const bytes = wavBytes();
+    const sourcePath = path.join(root, "source.wav");
+    await writeFile(sourcePath, bytes);
+
+    const preview = await storage.storeGeneratedObject({
+      storageKey: "generated/previews/11111111-1111-4111-8111-111111111111.wav",
+      sourcePath,
+      contentType: "audio/wav",
+      expectedByteSize: bytes.length,
+    });
+    expect(preview).toMatchObject({
+      storageBackend: "local",
+      storageKey: "generated/previews/11111111-1111-4111-8111-111111111111.wav",
+      byteSize: bytes.length,
+    });
+
+    const committed = await storage.storeGeneratedObject({
+      storageKey:
+        "submissions/22222222-2222-4222-8222-222222222222/revisions/1/33333333-3333-4333-8333-333333333333.wav",
+      sourcePath,
+      contentType: "audio/wav",
+      expectedByteSize: bytes.length,
+    });
+    expect(await readFile(path.join(root, committed.storageKey))).toEqual(
+      bytes,
+    );
   });
 });

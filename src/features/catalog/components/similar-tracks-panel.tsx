@@ -63,7 +63,7 @@ export function SimilarTracksPanel({ tracks }: { tracks: SimilarTrackItem[] }) {
           </h2>
         </div>
         <Badge variant="outline" className="text-xs">
-          Vector similarity
+          Sound-alike picks
         </Badge>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -73,7 +73,6 @@ export function SimilarTracksPanel({ tracks }: { tracks: SimilarTrackItem[] }) {
 
       <ul className="mt-5 space-y-3">
         {tracks.map((track) => {
-          const matchPercent = Math.round(track.similarity * 100);
           return (
             <li key={track.trackId}>
               <article className="rounded-lg border border-border/80 bg-background/50 p-4 transition-colors hover:bg-muted/50">
@@ -97,14 +96,12 @@ export function SimilarTracksPanel({ tracks }: { tracks: SimilarTrackItem[] }) {
                             track.versionType.replaceAll("_", " ")}
                         </p>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Badge
-                          variant="secondary"
-                          className="text-[11px] font-medium text-brand"
-                        >
-                          {matchPercent}% match
-                        </Badge>
-                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] font-medium text-brand"
+                      >
+                        Similar feel
+                      </Badge>
                     </div>
 
                     <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">

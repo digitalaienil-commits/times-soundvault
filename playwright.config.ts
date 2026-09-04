@@ -26,7 +26,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `pnpm dev --hostname localhost --port ${port}`,
+    command: `./node_modules/.bin/next dev --hostname localhost --port ${port}`,
     url: `${baseURL}/sign-in`,
     reuseExistingServer: false,
     timeout: 120_000,

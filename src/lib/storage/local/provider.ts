@@ -42,7 +42,7 @@ export class LocalStorageProvider implements StorageProvider {
 
   private resolveStorageKey(storageKey: string): string {
     if (
-      !/^(?:submissions\/[0-9a-f-]+\/revisions\/[1-9][0-9]*\/[0-9a-f-]+\.(?:wav|mp3)|generated\/(?:previews\/[0-9a-f-]+\.mp3|packages\/[0-9a-f-]+\.zip))(?:\.part)?$/.test(
+      !/^(?:submissions\/[0-9a-f-]+\/revisions\/[1-9][0-9]*\/[0-9a-f-]+\.(?:wav|mp3)|generated\/(?:previews\/[0-9a-f-]+\.(?:wav|mp3)|packages\/[0-9a-f-]+\.zip))(?:\.part)?$/.test(
         storageKey,
       )
     ) {

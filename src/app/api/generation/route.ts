@@ -3,7 +3,7 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthState } from "@/lib/auth/current-user";
 import {
-  generateMusicTrack,
+  generateAudioDraft,
   saveGeneratedTrackAsDraft,
   GenerationServiceError,
 } from "@/lib/generation/service";
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
     };
 
     if (body.action === "generate") {
-      const result = await generateMusicTrack(state.user, {
+      const result = await generateAudioDraft(state.user, {
+        assetKind: body.assetKind === "sound_effect" ? "sound_effect" : "music",
         prompt: String(body.prompt ?? ""),
         provider: body.provider as
           "google_lyria" | "elevenlabs" | "simulated" | undefined,
@@ -40,7 +41,11 @@ export async function POST(request: NextRequest) {
         tempoBpm: typeof body.tempoBpm === "number" ? body.tempoBpm : null,
         genre: body.genre ? String(body.genre) : null,
         seed: typeof body.seed === "number" ? body.seed : null,
-        dryRun: typeof body.dryRun === "boolean" ? body.dryRun : undefined,
+        loop: typeof body.loop === "boolean" ? body.loop : undefined,
+        promptInfluence:
+          typeof body.promptInfluence === "number"
+            ? body.promptInfluence
+            : null,
       });
 
       return NextResponse.json({ ok: true, data: result });
@@ -48,16 +53,7 @@ export async function POST(request: NextRequest) {
 
     if (body.action === "save_draft") {
       const result = await saveGeneratedTrackAsDraft(state.user, {
-        audioBase64: String(body.audioBase64 ?? ""),
-        mimeType: (body.mimeType as "audio/wav" | "audio/mpeg") ?? "audio/wav",
-        containerFormat: (body.containerFormat as "wav" | "mp3") ?? "wav",
-        durationMs:
-          typeof body.durationMs === "number" ? body.durationMs : 30000,
-        provider: String(body.provider ?? "simulated"),
-        model: String(body.model ?? "simulated-v1"),
-        prompt: String(body.prompt ?? ""),
-        parameters: (body.parameters as Record<string, unknown>) ?? {},
-        isSimulated: Boolean(body.isSimulated),
+        generationId: String(body.generationId ?? ""),
         workingTitle: body.workingTitle ? String(body.workingTitle) : undefined,
       });
 

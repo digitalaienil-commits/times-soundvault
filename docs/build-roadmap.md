@@ -72,5 +72,7 @@ AI generation or production deployment.
 Section 13 adds canonical embedding representations, pgvector cosine distance
 indexing, opt-in semantic search with PostgreSQL lexical hybrid ranking, nearest
 published track similarity on Track Detail, and a role-governed AI music
-generation workspace (Google Lyria 3 and ElevenLabs) with dry-run mode, private
-storage, full provenance, and draft submission entry without publication bypass.
+and sound-effect generation workspace (Google Lyria 3 and ElevenLabs) with
+dry-run mode, private storage, full provenance, and draft submission entry
+without publication bypass. Generated draft commits use server-stored audio and
+do not trust browser-supplied bytes.

@@ -5,7 +5,10 @@ import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
 import { GenerationWorkspace } from "@/features/generation/components/generation-workspace";
 import { requireRouteAccess } from "@/lib/auth/current-user";
-import { parseGenerationConfig } from "@/lib/generation/config";
+import {
+  getAvailableGenerationProviders,
+  parseGenerationConfig,
+} from "@/lib/generation/config";
 
 export const metadata: Metadata = {
   title: "AI Music Generation",
@@ -16,6 +19,7 @@ export const metadata: Metadata = {
 export default async function GeneratePage() {
   await requireRouteAccess("/generate");
   const config = parseGenerationConfig();
+  const providers = getAvailableGenerationProviders(config);
 
   return (
     <div className="space-y-6">
@@ -26,6 +30,7 @@ export default async function GeneratePage() {
       <GenerationWorkspace
         initialDryRun={config.dryRun}
         defaultProvider={config.provider}
+        providers={providers}
       />
     </div>
   );

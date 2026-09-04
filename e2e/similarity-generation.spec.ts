@@ -12,12 +12,60 @@ test.afterAll(async () => {
   await pool.end();
 });
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: "Admin",
-  music_producer: "Music Producer",
-  coordinator: "Coordinator",
-  user: "User",
-};
+function testOrigin() {
+  return (
+    process.env.PLAYWRIGHT_BASE_URL ??
+    `http://localhost:${process.env.PORT ?? process.env.PLAYWRIGHT_PORT ?? "3005"}`
+  );
+}
+
+function cookieFromHeader(cookieHeader: string, origin: string) {
+  const [nameValue] = cookieHeader.split(";");
+  const equalsIndex = nameValue.indexOf("=");
+  if (equalsIndex <= 0) {
+    throw new Error("Local sign-in response did not include a valid cookie");
+  }
+  return {
+    name: nameValue.slice(0, equalsIndex),
+    value: nameValue.slice(equalsIndex + 1),
+    url: origin,
+  };
+}
+
+async function localSessionCookies(
+  role: "admin" | "music_producer" | "coordinator" | "user",
+  callbackUrl: string,
+) {
+  const origin = testOrigin();
+  const response = await fetch(`${origin}/api/local-auth/direct-sign-in`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Origin: origin,
+    },
+    body: new URLSearchParams({
+      role,
+      callbackUrl,
+    }),
+    redirect: "manual",
+  });
+  expect(response.status).toBe(303);
+
+  const responseHeaders = response.headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const cookies =
+    responseHeaders.getSetCookie?.() ??
+    (response.headers.get("set-cookie")
+      ? [response.headers.get("set-cookie")!]
+      : []);
+  expect(cookies.length).toBeGreaterThan(0);
+  return cookies.filter((cookie) => cookie.includes("="));
+}
+
+function cookieHeader(cookies: string[]) {
+  return cookies.map((cookie) => cookie.split(";")[0]).join("; ");
+}
 
 async function signInAs(
   page: Page,
@@ -25,39 +73,44 @@ async function signInAs(
   destination?: string,
 ) {
   await page.context().clearCookies();
-  const label = ROLE_LABELS[role] ?? role;
   const callback = destination ?? (role === "user" ? "/library" : "/dashboard");
-  await page.goto(`/sign-in?callbackUrl=${encodeURIComponent(callback)}`);
-  const button = page.getByRole("button", {
-    name: `Enter as ${label}`,
-    exact: true,
+  const origin = testOrigin();
+  const cookies = await localSessionCookies(role, callback);
+  await page
+    .context()
+    .addCookies(cookies.map((cookie) => cookieFromHeader(cookie, origin)));
+
+  await page.goto(callback, {
+    waitUntil: "domcontentloaded",
   });
-  await button.click();
-  await expect(page).not.toHaveURL(/\/sign-in/);
-  await page.waitForLoadState("networkidle");
+  await expect(page).toHaveURL(new RegExp(`${callback.replace("/", "\\/")}$`));
+  await expect(page.locator("#main-content")).toBeVisible();
 }
 
 test.describe("Section 13 Similarity Search and AI Music Generation", () => {
-  test("enforces role route boundaries for /generate", async ({ page }) => {
-    // 1. User should NOT have access to /generate
-    await signInAs(page, "user");
-    await page.goto("/generate");
-    await expect(page).toHaveURL(/\/access-denied$/);
+  test("enforces /generate role boundaries server-side", async () => {
+    const origin = testOrigin();
 
-    // 2. Music Producer should have access to /generate
-    await signInAs(page, "music_producer", "/generate");
-    await expect(page).toHaveURL(/\/generate$/);
-    await expect(
-      page.getByRole("heading", { name: "AI Music Generation" }),
-    ).toBeVisible();
+    for (const role of [
+      "user",
+      "music_producer",
+      "coordinator",
+      "admin",
+    ] as const) {
+      const cookies = await localSessionCookies(role, "/generate");
+      const response = await fetch(`${origin}/generate`, {
+        headers: { Cookie: cookieHeader(cookies) },
+        redirect: "manual",
+      });
 
-    // 3. Coordinator should have access to /generate
-    await signInAs(page, "coordinator", "/generate");
-    await expect(page).toHaveURL(/\/generate$/);
-
-    // 4. Admin should have access to /generate
-    await signInAs(page, "admin", "/generate");
-    await expect(page).toHaveURL(/\/generate$/);
+      if (role === "user") {
+        expect(response.status).toBe(307);
+        expect(response.headers.get("location")).toBe("/access-denied");
+      } else {
+        expect(response.status).toBe(200);
+        expect(await response.text()).toContain("AI Music Generation");
+      }
+    }
   });
 
   test("generates simulated audio in dry-run mode and commits draft submission", async ({
@@ -77,8 +130,10 @@ test.describe("Section 13 Similarity Search and AI Music Generation", () => {
 
     // Fill in prompt
     const promptInput = page.getByLabel(/Prompt Description/i);
-    await promptInput.fill(
+    await promptInput.click();
+    await promptInput.pressSequentially(
       "High energy breaking news theme with driving brass",
+      { delay: 1 },
     );
 
     // Verify dry run status badge is visible
@@ -86,6 +141,7 @@ test.describe("Section 13 Similarity Search and AI Music Generation", () => {
 
     // Trigger generation
     const generateBtn = page.getByRole("button", { name: /Generate Audio/i });
+    await expect(generateBtn).toBeEnabled();
     await generateBtn.click();
 
     // Wait for generation result

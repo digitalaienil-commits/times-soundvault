@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { rm, writeFile } from "node:fs/promises";
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -169,6 +171,53 @@ describe("OneDrive SharePoint storage adapter", () => {
   it("enforces Microsoft Graph chunk multiples", () => {
     expect(() => assertValidOneDriveChunkSize(10 * 1024 * 1024)).not.toThrow();
     expect(() => assertValidOneDriveChunkSize(1024)).toThrow(/320 KiB/);
+  });
+
+  it("allows generated previews and AI draft source objects", async () => {
+    const source = new Uint8Array([1, 2, 3, 4]);
+    const request = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          return json({ uploadUrl: "https://upload.example/generated" });
+        }
+        return json({
+          id: "generated-item",
+          size: source.byteLength,
+        });
+      },
+    );
+    const provider = new OneDriveStorageProvider(
+      config,
+      request as typeof fetch,
+      async () => "token",
+    );
+    const tempPath = `/private/tmp/${randomUUID()}.wav`;
+    await writeFile(tempPath, source);
+
+    try {
+      await expect(
+        provider.storeGeneratedObject({
+          storageKey:
+            "generated/previews/11111111-1111-4111-8111-111111111111.wav",
+          sourcePath: tempPath,
+          contentType: "audio/wav",
+          expectedByteSize: source.byteLength,
+        }),
+      ).resolves.toMatchObject({ storageKey: expect.stringContaining(".wav") });
+      await expect(
+        provider.storeGeneratedObject({
+          storageKey:
+            "submissions/22222222-2222-4222-8222-222222222222/revisions/1/33333333-3333-4333-8333-333333333333.mp3",
+          sourcePath: tempPath,
+          contentType: "audio/mpeg",
+          expectedByteSize: source.byteLength,
+        }),
+      ).resolves.toMatchObject({
+        storageKey: expect.stringContaining("submissions/"),
+      });
+    } finally {
+      await rm(tempPath, { force: true });
+    }
   });
 
   it("streams a bounded server-authorized content range without exposing Graph", async () => {

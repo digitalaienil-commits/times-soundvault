@@ -199,6 +199,12 @@ invariants. See [docs/admin-operations.md](docs/admin-operations.md),
 [docs/system-maintenance.md](docs/system-maintenance.md) and
 [docs/audit-and-retention.md](docs/audit-and-retention.md).
 
+Section 13 adds canonical similarity search and role-governed AI audio
+generation. Provider credentials remain server-only, dry-run mode is safe for
+local development, and saving a generation creates an unpublished draft
+Submission from a trusted server-stored preview rather than browser-supplied
+audio. See [docs/similarity-search-ai-generation.md](docs/similarity-search-ai-generation.md).
+
 Section 4 storage is behind a server-only adapter. Local development writes
 generated object keys beneath an ignored private root, verifies exact size and
 WAV/MP3 signatures, and atomically publishes completed files. The OneDrive
@@ -230,8 +236,9 @@ proportions. See [public/brand/README.md](public/brand/README.md).
   credentials; automated coverage uses mocked Microsoft Graph responses.
 - YouTube Content ID/CMS automation is not connected or live-tested. Section 6
   uses a manual operational workflow and is API-ready.
-- Section 12 does not implement semantic search, similarity search, AI
-  generation, or production deployment.
+- Production deployment is not yet covered by this repository milestone.
+- Live AI provider calls require approved Google or ElevenLabs credentials and
+  are not executed by the repository test suite.
 - The OneDrive adapter is covered with mocked HTTP tests. Live Microsoft Graph
   upload testing requires organization credentials and is not performed in CI.
 - Team access sends no invitation email.

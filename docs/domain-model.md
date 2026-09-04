@@ -30,7 +30,13 @@ catalog.audio_file (source/preview/analysis encoding)
 catalog.track
         |----> catalog.track_metadata (canonical searchable values)
         +----> catalog.track_term_assignment ---> catalog.taxonomy_term
+        +----> catalog.track_embedding (semantic and similarity vectors)
         +----> published_revision_id (approved revision selected for publication)
+
+workflow.ai_generation_record
+        |----> private generated preview object
+        +----> optional created_submission_id / created_revision_id
+        +----> optional output_audio_file_id after draft commit
 
 planning.demand
         |----> planning.demand_term_requirement ---> catalog.taxonomy_term
@@ -130,3 +136,15 @@ Taxonomy deactivation preserves historical assignments and only prevents new
 selection; historical data is not deleted. Derived artifacts may be safely
 reconciled or cleaned, but source Masters and Stems are not casually deleted by
 the Admin UI.
+
+## Similarity and generated audio
+
+Section 13 embeddings support search and sound-alike recommendations only for
+Tracks already visible through normal publication rules. Vector distance is not
+stored as a business approval signal.
+
+AI generation records are provenance records owned by the actor. They become
+catalog audio only when the server verifies the private generated preview and
+creates a normal draft Submission revision. Generated audio is marked with
+`catalog.audio_asset.origin = 'ai_generated'`; uploaded audio remains
+`human_uploaded`.
