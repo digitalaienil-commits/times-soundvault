@@ -27,4 +27,12 @@ describe("parseEmbeddingConfig", () => {
     expect(config.provider).toBe("simulated");
     expect(config.dimension).toBe(512);
   });
+
+  it("rejects NEXT_PUBLIC variables for embedding credentials", () => {
+    expect(() =>
+      parseEmbeddingConfig({
+        NEXT_PUBLIC_GEMINI_API_KEY: "secret",
+      } as unknown as NodeJS.ProcessEnv),
+    ).toThrow(/NEXT_PUBLIC_/);
+  });
 });

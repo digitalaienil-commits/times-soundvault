@@ -14,6 +14,17 @@ export interface GenerationConfig {
 export function parseGenerationConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): GenerationConfig {
+  for (const key of Object.keys(env)) {
+    if (
+      key.startsWith("NEXT_PUBLIC_") &&
+      /GEMINI|ELEVENLABS|GENERATION/.test(key)
+    ) {
+      throw new Error(
+        "Generation credentials must never use NEXT_PUBLIC_ variables",
+      );
+    }
+  }
+
   const rawProvider = env.GENERATION_PROVIDER?.trim().toLowerCase();
   let provider: GenerationProviderKind = "google_lyria";
   if (rawProvider === "elevenlabs") {

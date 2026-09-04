@@ -49,13 +49,40 @@ export class GoogleEmbeddingProvider implements EmbeddingProvider {
     }
 
     try {
-      const response = await this.client.models.embedContent({
-        model: this.model,
-        contents: trimmed,
-        config: {
+      const isGeminiEmbedding2 = this.model.includes("gemini-embedding-2");
+      let contents: string;
+      let config: { outputDimensionality: number; taskType?: string };
+
+      if (isGeminiEmbedding2) {
+        // gemini-embedding-2 does not support task_type / taskType parameter.
+        // Google's recommended text-retrieval formatting uses instruction prefixes:
+        // - Query: "task: search result | query: {query}"
+        // - Document: "title: {title} | text: {document}"
+        if (taskType === "RETRIEVAL_QUERY") {
+          contents = `task: search result | query: ${trimmed}`;
+        } else {
+          let docTitle = "none";
+          const titleMatch = trimmed.match(/^Title:\s*([^\n]+)/i);
+          if (titleMatch && titleMatch[1]) {
+            docTitle = titleMatch[1].trim();
+          }
+          contents = `title: ${docTitle} | text: ${trimmed}`;
+        }
+        config = {
+          outputDimensionality: this.dimension,
+        };
+      } else {
+        contents = trimmed;
+        config = {
           taskType,
           outputDimensionality: this.dimension,
-        },
+        };
+      }
+
+      const response = await this.client.models.embedContent({
+        model: this.model,
+        contents,
+        config,
       });
 
       const values =

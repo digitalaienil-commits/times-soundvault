@@ -16,4 +16,12 @@ describe("parseGenerationConfig", () => {
     expect(config.dryRun).toBe(false);
     expect(config.provider).toBe("elevenlabs");
   });
+
+  it("rejects NEXT_PUBLIC variables for generation credentials", () => {
+    expect(() =>
+      parseGenerationConfig({
+        NEXT_PUBLIC_ELEVENLABS_API_KEY: "secret",
+      } as unknown as NodeJS.ProcessEnv),
+    ).toThrow(/NEXT_PUBLIC_/);
+  });
 });

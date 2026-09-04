@@ -34,3 +34,120 @@ describe("SimulatedEmbeddingProvider", () => {
     expect(queryVec).toHaveLength(768);
   });
 });
+
+describe("GoogleEmbeddingProvider", () => {
+  it("formats gemini-embedding-2 queries with task instruction and omits taskType", async () => {
+    let capturedCall: unknown;
+    const { GoogleEmbeddingProvider } = await import("./google-provider");
+
+    const provider = new GoogleEmbeddingProvider({
+      apiKey: "test-key",
+      model: "gemini-embedding-2",
+      dimension: 768,
+    });
+
+    // Mock client.models.embedContent
+    (
+      provider as unknown as {
+        client: {
+          models: { embedContent: (args: unknown) => Promise<unknown> };
+        };
+      }
+    ).client = {
+      models: {
+        embedContent: async (args: unknown) => {
+          capturedCall = args;
+          return {
+            embeddings: [{ values: new Array(768).fill(0.1) }],
+          };
+        },
+      },
+    };
+
+    const vector = await provider.embedQuery("breaking news theme");
+    expect(vector).toHaveLength(768);
+    expect(capturedCall).toEqual({
+      model: "gemini-embedding-2",
+      contents: "task: search result | query: breaking news theme",
+      config: {
+        outputDimensionality: 768,
+      },
+    });
+  });
+
+  it("formats gemini-embedding-2 documents with title prefix and omits taskType", async () => {
+    let capturedCall: unknown;
+    const { GoogleEmbeddingProvider } = await import("./google-provider");
+
+    const provider = new GoogleEmbeddingProvider({
+      apiKey: "test-key",
+      model: "gemini-embedding-2",
+      dimension: 768,
+    });
+
+    (
+      provider as unknown as {
+        client: {
+          models: { embedContent: (args: unknown) => Promise<unknown> };
+        };
+      }
+    ).client = {
+      models: {
+        embedContent: async (args: unknown) => {
+          capturedCall = args;
+          return {
+            embeddings: [{ values: new Array(768).fill(0.1) }],
+          };
+        },
+      },
+    };
+
+    await provider.embedDocument("Title: Evening Horizon\nGenre: Ambient");
+    expect(capturedCall).toEqual({
+      model: "gemini-embedding-2",
+      contents:
+        "title: Evening Horizon | text: Title: Evening Horizon\nGenre: Ambient",
+      config: {
+        outputDimensionality: 768,
+      },
+    });
+  });
+
+  it("passes taskType in config for legacy models like text-embedding-004", async () => {
+    let capturedCall: unknown;
+    const { GoogleEmbeddingProvider } = await import("./google-provider");
+
+    const provider = new GoogleEmbeddingProvider({
+      apiKey: "test-key",
+      model: "text-embedding-004",
+      dimension: 768,
+    });
+
+    (
+      provider as unknown as {
+        client: {
+          models: { embedContent: (args: unknown) => Promise<unknown> };
+        };
+      }
+    ).client = {
+      models: {
+        embedContent: async (args: unknown) => {
+          capturedCall = args;
+          return {
+            embeddings: [{ values: new Array(768).fill(0.1) }],
+          };
+        },
+      },
+    };
+
+    await provider.embedQuery("breaking news");
+    expect(capturedCall).toEqual({
+      model: "text-embedding-004",
+      contents: "breaking news",
+      config: {
+        taskType: "RETRIEVAL_QUERY",
+        outputDimensionality: 768,
+      },
+    });
+  });
+});

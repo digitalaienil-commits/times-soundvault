@@ -16,6 +16,14 @@ export interface EmbeddingConfig {
 export function parseEmbeddingConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): EmbeddingConfig {
+  for (const key of Object.keys(env)) {
+    if (key.startsWith("NEXT_PUBLIC_") && /GEMINI|EMBEDDING/.test(key)) {
+      throw new Error(
+        "Embedding credentials must never use NEXT_PUBLIC_ variables",
+      );
+    }
+  }
+
   const apiKey = env.GEMINI_API_KEY?.trim();
   const rawProvider = env.EMBEDDING_PROVIDER?.trim().toLowerCase();
 
