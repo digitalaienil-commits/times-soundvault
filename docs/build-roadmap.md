@@ -10,6 +10,8 @@
 - Section 12 — Admin Operations, catalog governance, taxonomy administration,
   audit and retention: complete after clean database, quality, browser,
   responsive, accessibility and production-build gates pass.
+- Section 13 — Similarity Search & AI Generation: complete after clean database,
+  quality, browser, responsive, accessibility and production-build gates pass.
 
 Status is marked complete only after the section’s required checks pass.
 
@@ -25,7 +27,7 @@ Status is marked complete only after the section’s required checks pass.
 10. Professional Player, Stems & Downloads — complete
 11. Demand Sheet — complete
 12. Admin Operations — complete
-13. Similarity Search & AI Generation — planned
+13. Similarity Search & AI Generation — complete
 14. Production Hardening & Launch — planned
 
 Section 6 adds an independent copyright state axis, human Content ID eligibility
@@ -66,3 +68,9 @@ copyright inspection, Demand supervision, audit, retention and integrity
 findings. It does not bypass approval, publication, copyright, Demand or media
 business workflows and does not implement semantic search, similarity search,
 AI generation or production deployment.
+
+Section 13 adds canonical embedding representations, pgvector cosine distance
+indexing, opt-in semantic search with PostgreSQL lexical hybrid ranking, nearest
+published track similarity on Track Detail, and a role-governed AI music
+generation workspace (Google Lyria 3 and ElevenLabs) with dry-run mode, private
+storage, full provenance, and draft submission entry without publication bypass.

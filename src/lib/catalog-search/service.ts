@@ -19,6 +19,9 @@ import {
 } from "./validation";
 import { countActiveCatalogFilters } from "./filters";
 
+import { parseEmbeddingConfig } from "@/lib/embeddings/config";
+import { createEmbeddingProvider } from "@/lib/embeddings/factory";
+
 export async function searchPublishedCatalog(
   params: RawCatalogSearchParams,
 ): Promise<CatalogSearchResult> {
@@ -41,8 +44,36 @@ export async function searchPublishedCatalog(
     };
   }
 
+  let searchOptions:
+    | {
+        queryVector?: number[] | null;
+        provider?: string;
+        model?: string;
+        dimension?: number;
+      }
+    | undefined;
+
+  const embeddingConfig = parseEmbeddingConfig();
+  if (embeddingConfig.semanticSearchEnabled && input.query?.trim()) {
+    try {
+      const provider = createEmbeddingProvider();
+      const queryVector = await provider.embedQuery(input.query);
+      searchOptions = {
+        queryVector,
+        provider: embeddingConfig.provider,
+        model: embeddingConfig.model,
+        dimension: embeddingConfig.dimension,
+      };
+    } catch (error) {
+      console.warn(
+        "Semantic query embedding failed, falling back to lexical search:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
   const [rows, facets] = await Promise.all([
-    searchPublishedCatalogRows(getDatabase(), input),
+    searchPublishedCatalogRows(getDatabase(), input, searchOptions),
     facetsPromise,
   ]);
   return {

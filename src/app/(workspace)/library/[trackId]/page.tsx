@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, AudioLines } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { SimilarTracksPanel } from "@/features/catalog/components/similar-tracks-panel";
 import { TrackMediaPanel } from "@/features/catalog/components/track-media-panel";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
 import { getPublishedTrackDetail } from "@/lib/catalog-search/service";
+import { findSimilarPublishedTracks } from "@/lib/catalog-search/similarity";
 
 export const metadata: Metadata = { title: "Published Track" };
 
@@ -25,6 +27,7 @@ export default async function PublishedTrackPage({
   await requireRouteFamilyAccess("/library/[trackId]", `/library/${trackId}`);
   const track = await getPublishedTrackDetail(trackId);
   if (!track) notFound();
+  const similarTracks = await findSimilarPublishedTracks(trackId, 4);
   const metadataItems = [
     ["BPM", track.bpm],
     ["Key", [track.keyTonic, track.keyMode].filter(Boolean).join(" ")],
@@ -75,7 +78,7 @@ export default async function PublishedTrackPage({
     ],
   ] as const;
   return (
-    <main>
+    <div>
       <Link
         href="/library"
         className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground"
@@ -110,35 +113,46 @@ export default async function PublishedTrackPage({
         </div>
       </header>
       <div className="mt-6 grid gap-6 xl:grid-cols-3">
-        <section
-          aria-labelledby="track-metadata"
-          className="rounded-xl border border-border bg-surface p-6 xl:col-span-2"
-        >
-          <h2
-            id="track-metadata"
-            className="text-lg font-semibold text-foreground"
+        <div className="space-y-6 xl:col-span-2">
+          <section
+            aria-labelledby="track-metadata"
+            className="rounded-xl border border-border bg-surface p-6"
           >
-            Canonical metadata
-          </h2>
-          <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
-            {metadataItems.map(([label, item]) => (
-              <div key={label}>
-                <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  {label}
-                </dt>
-                <dd className="mt-1 text-sm text-foreground">{value(item)}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {track.terms.map((term) => (
-              <Badge key={`${term.category}-${term.slug}`} variant="secondary">
-                {term.label}
-              </Badge>
-            ))}
-          </div>
-        </section>
-        <aside className="space-y-6">
+            <h2
+              id="track-metadata"
+              className="text-lg font-semibold text-foreground"
+            >
+              Canonical metadata
+            </h2>
+            <dl className="mt-5 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+              {metadataItems.map(([label, item]) => (
+                <div key={label}>
+                  <dt className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    {label}
+                  </dt>
+                  <dd className="mt-1 text-sm text-foreground">
+                    {value(item)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <div className="mt-6 flex flex-wrap gap-2">
+              {track.terms.map((term) => (
+                <Badge
+                  key={`${term.category}-${term.slug}`}
+                  variant="secondary"
+                >
+                  {term.label}
+                </Badge>
+              ))}
+            </div>
+          </section>
+          <SimilarTracksPanel tracks={similarTracks} />
+        </div>
+        <aside
+          aria-label="Track playback and technical summary"
+          className="space-y-6"
+        >
           <TrackMediaPanel trackId={track.trackId} />
           <section
             aria-labelledby="technical-summary"
@@ -183,6 +197,6 @@ export default async function PublishedTrackPage({
           ) : null}
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

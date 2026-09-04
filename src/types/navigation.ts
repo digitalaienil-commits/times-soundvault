@@ -7,6 +7,7 @@ export type WorkspaceRoute =
   | "/library"
   | "/my-uploads"
   | "/upload"
+  | "/generate"
   | "/review"
   | "/copyright"
   | "/demands"

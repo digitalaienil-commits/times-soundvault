@@ -89,7 +89,7 @@ export interface OpenedStoredObject {
 export interface StoreGeneratedObjectInput {
   storageKey: string;
   sourcePath: string;
-  contentType: "audio/mpeg" | "application/zip";
+  contentType: "audio/mpeg" | "audio/wav" | "application/zip";
   expectedByteSize: number;
 }
 
