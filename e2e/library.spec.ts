@@ -195,6 +195,7 @@ async function enterLibrary(page: Page, accessName: string) {
     .getByRole("button", { name: `Enter as ${accessName}`, exact: true })
     .click();
   await expect(page).toHaveURL(/\/library$/);
+  await page.waitForLoadState("networkidle");
 }
 
 test("all four roles can reach the published library", async ({ browser }) => {

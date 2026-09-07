@@ -2,6 +2,9 @@ import "server-only";
 
 import type { Pool } from "pg";
 
+import { createUnifiedAiMetadata } from "@/lib/analysis/gemini-metadata";
+import { extractLocalMusicFeatures } from "@/lib/analysis/local-features";
+import { persistUnifiedAiMetadata } from "@/lib/analysis/repository";
 import { calculateFileSha256 } from "@/lib/audio/checksum";
 import { measureAudioFile } from "@/lib/audio/ffmpeg";
 import { probeAudioFile } from "@/lib/audio/ffprobe";
@@ -16,6 +19,7 @@ import { createStorageProvider } from "@/lib/storage/factory";
 import { StorageProviderError } from "@/lib/storage/provider";
 import type { ProcessingJobDto } from "@/types/processing";
 
+import { parseAiAnalysisConfig } from "../analysis/config";
 import { parseProcessingConfig } from "./config";
 import {
   beginRevisionProcessing,
@@ -67,6 +71,7 @@ async function processRevision(
   const results: Array<{
     source: (typeof sources)[number];
     probe: Awaited<ReturnType<typeof probeAudioFile>>;
+    measurements: Awaited<ReturnType<typeof measureAudioFile>>;
     localPath: string;
   }> = [];
   const issues: TechnicalQcIssue[] = [];
@@ -128,7 +133,7 @@ async function processRevision(
         matchingAudioFileIds: matches,
       });
       if (duplicate) issues.push(duplicate);
-      results.push({ source, probe, localPath });
+      results.push({ source, probe, measurements, localPath });
     }
     const master = results.find((item) => item.source.assetRole === "master");
     if (!master)
@@ -149,11 +154,60 @@ async function processRevision(
     }
     await upsertQcIssues(pool, job.submissionRevisionId, issues);
     await markTechnicalComplete(pool, job.submissionRevisionId);
+    const aiConfig = parseAiAnalysisConfig();
+    if (!aiConfig.enabled || !aiConfig.geminiApiKey) {
+      await finalizeRevisionForReview(pool, {
+        submissionId: job.submissionId,
+        revisionId: job.submissionRevisionId,
+        overallStatus: "complete",
+        aiStatus: "disabled",
+      });
+      return;
+    }
+
+    try {
+      const features = await extractLocalMusicFeatures(master.localPath, {
+        sampleRateHz: aiConfig.sampleRateHz,
+        maxDurationSeconds: aiConfig.maxDurationSeconds,
+        timeoutMs: aiConfig.timeoutMs,
+      });
+      const metadata = await createUnifiedAiMetadata(aiConfig, {
+        source: master.source,
+        probe: master.probe,
+        measurements: master.measurements,
+        features,
+      });
+      await persistUnifiedAiMetadata(pool, {
+        source: master.source,
+        features,
+        metadata,
+      });
+      await finalizeRevisionForReview(pool, {
+        submissionId: job.submissionId,
+        revisionId: job.submissionRevisionId,
+        overallStatus: "complete",
+        aiStatus: "complete",
+      });
+      return;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "AI metadata analysis failed";
+      await upsertQcIssues(pool, job.submissionRevisionId, [
+        {
+          audioFileId: master.source.audioFileId,
+          code: "ai_metadata_unavailable",
+          severity: "warning",
+          message:
+            "AI metadata analysis could not be completed. Technical results are ready for Coordinator review.",
+          details: { reason: message.slice(0, 500) },
+        },
+      ]);
+    }
     await finalizeRevisionForReview(pool, {
       submissionId: job.submissionId,
       revisionId: job.submissionRevisionId,
-      overallStatus: "complete",
-      aiStatus: "disabled",
+      overallStatus: "partial",
+      aiStatus: "failed",
     });
   } finally {
     await run.cleanup();

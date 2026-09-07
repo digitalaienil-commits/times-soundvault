@@ -118,6 +118,7 @@ pnpm processing:worker
 pnpm processing:once
 pnpm processing:reconcile
 pnpm processing:cleanup
+pnpm analysis:verify    # verify FFmpeg, Essentia and optional Gemini metadata
 pnpm copyright:worker    # build private manual-check test batches
 pnpm copyright:once      # process one copyright job
 pnpm copyright:reconcile # create missing checks and recover stale jobs
@@ -167,6 +168,11 @@ and refuses changed applied migrations. See
 [docs/domain-model.md](docs/domain-model.md),
 [docs/catalog-metadata.md](docs/catalog-metadata.md) and
 [docs/submission-lifecycle.md](docs/submission-lifecycle.md).
+
+Processing uses FFmpeg/ffprobe for technical facts, Essentia.js for local music
+features and Gemini for server-side semantic metadata suggestions when
+`GEMINI_API_KEY` is configured. The key must stay in `.env.local` or production
+server environment only; never expose it through `NEXT_PUBLIC_`.
 
 Section 9 uses a PostgreSQL-only, trigger-maintained search projection for
 published canonical Tracks. See

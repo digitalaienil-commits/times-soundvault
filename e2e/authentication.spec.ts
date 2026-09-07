@@ -516,8 +516,15 @@ test("role changes revoke the old session and apply new navigation after sign in
     await roleDialog
       .getByRole("button", { name: "Change role and revoke sessions" })
       .click();
-    await expect(adminPage.getByText(/Role changed/)).toBeVisible();
-    await adminPage.waitForLoadState("networkidle");
+    await expect
+      .poll(async () => {
+        const result = await testDatabase!.query<{ role: string }>(
+          `SELECT role FROM auth."user" WHERE lower(email)=lower($1)`,
+          [identities.producer.email],
+        );
+        return result.rows[0]?.role;
+      })
+      .toBe("music_producer");
   } finally {
     await adminContext.close();
     await memberContext.close();

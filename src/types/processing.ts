@@ -2,9 +2,6 @@ export type TechnicalStatus = "pending" | "processing" | "complete" | "failed";
 export type AiAnalysisStatus =
   | "not_started"
   | "disabled"
-  | "preparing"
-  | "uploading"
-  | "analyzing"
   | "complete"
   | "failed"
   | "skipped_unsupported_duration";

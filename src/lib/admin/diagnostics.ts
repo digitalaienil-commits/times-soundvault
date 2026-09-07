@@ -2,6 +2,7 @@ import "server-only";
 
 import type { QueryResultRow } from "pg";
 
+import { parseAiAnalysisConfig } from "@/lib/analysis/config";
 import { parseGenerationConfig } from "@/lib/generation/config";
 import { getDatabase } from "@/lib/database/database";
 import { parseMediaConfig } from "@/lib/media/config";
@@ -77,14 +78,39 @@ export async function getSystemHealthItems(): Promise<AdminHealthItem[]> {
     }),
   );
 
-  items.push({
-    key: "ai-analysis",
-    label: "AI analysis",
-    status: "disabled",
-    summary: "External provider removed",
-    detail:
-      "Technical processing runs locally. AI metadata can be added through the provider-neutral pipeline without exposing secrets to the browser.",
-  });
+  try {
+    const config = parseAiAnalysisConfig();
+    const fallback = config.fallbackModels.length
+      ? ` Fallbacks: ${config.fallbackModels.join(", ")}.`
+      : "";
+    items.push({
+      key: "ai-analysis",
+      label: "AI analysis",
+      status: !config.enabled
+        ? "disabled"
+        : config.geminiApiKey
+          ? "healthy"
+          : "warning",
+      summary: !config.enabled
+        ? "Disabled"
+        : config.geminiApiKey
+          ? "Local features and Gemini configured"
+          : "Gemini key missing",
+      detail: !config.enabled
+        ? "Disabled by AI_ANALYSIS_ENABLED. FFmpeg/ffprobe technical processing still runs locally."
+        : config.geminiApiKey
+          ? `Gemini metadata model ${config.model}; Essentia samples up to ${config.maxDurationSeconds}s at ${config.sampleRateHz}Hz.${fallback}`
+          : "FFmpeg/ffprobe and Essentia processing remain available, but semantic metadata requires GEMINI_API_KEY.",
+    });
+  } catch (error) {
+    items.push({
+      key: "ai-analysis",
+      label: "AI analysis",
+      status: "degraded",
+      summary: "Configuration needs attention",
+      detail: error instanceof Error ? error.message : "Configuration failed",
+    });
+  }
 
   try {
     const result = await database.query<
