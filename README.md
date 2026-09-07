@@ -221,11 +221,12 @@ URLs with AES-256-GCM, and verifies the final Graph item independently. See
 [docs/storage-provider-setup.md](docs/storage-provider-setup.md).
 
 Section 6 keeps copyright state separate from submission, technical analysis
-and publication. A durable worker creates a private Master-only MP4 and
-timestamp manifest; a Coordinator or Admin uploads it manually to an approved
-YouTube account and records only observations they actually verified. The test
-batch is never a Content ID reference. See
-[docs/youtube-copyright-workflow.md](docs/youtube-copyright-workflow.md),
+and publication. It supports both manual-first verification and automated
+YouTube Content ID Partner API scanning (`youtube_content_id`). In automated mode,
+operational batches are uploaded to a private test channel, claims are matched
+by timecode against batch items, observations are recorded with full provenance,
+and the test video is automatically deleted. The test batch is never a Content ID reference.
+See [docs/youtube-copyright-workflow.md](docs/youtube-copyright-workflow.md),
 [docs/content-id-readiness.md](docs/content-id-readiness.md) and
 [docs/copyright-operations.md](docs/copyright-operations.md).
 
@@ -241,8 +242,9 @@ proportions. See [public/brand/README.md](public/brand/README.md).
   been live-tested by the repository test suite.
 - Live OneDrive generated-object upload and range delivery require organization
   credentials; automated coverage uses mocked Microsoft Graph responses.
-- YouTube Content ID/CMS automation is not connected or live-tested. Section 6
-  uses a manual operational workflow and is API-ready.
+- YouTube Content ID automation runs in safe dry-run mode by default; live scanning
+  requires authorized partner credentials (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`,
+  `YOUTUBE_REFRESH_TOKEN`, `YOUTUBE_CONTENT_OWNER_ID`).
 - Production deployment is not yet covered by this repository milestone.
 - Live AI provider calls require approved Google or ElevenLabs credentials and
   are not executed by the repository test suite.

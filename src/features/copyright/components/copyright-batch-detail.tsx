@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
+import type { CopyrightProviderCapabilities } from "@/lib/copyright/provider";
 import type { CopyrightBatchDto } from "@/types/copyright";
 
 import {
   markRemainingNoClaimAction,
   recordBatchVideoAction,
   recordObservationAction,
+  runContentIdScanAction,
 } from "../actions";
 import { StatusLabel } from "./status-label";
 
@@ -13,7 +15,13 @@ function formatTimestamp(milliseconds: number) {
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-export function CopyrightBatchDetail({ batch }: { batch: CopyrightBatchDto }) {
+export function CopyrightBatchDetail({
+  batch,
+  capabilities,
+}: {
+  batch: CopyrightBatchDto;
+  capabilities?: CopyrightProviderCapabilities;
+}) {
   const remainingItemCount = batch.items.filter(
     (item) => !item.observationType,
   ).length;
@@ -52,6 +60,46 @@ export function CopyrightBatchDetail({ batch }: { batch: CopyrightBatchDto }) {
           </p>
         )}
       </section>
+
+      {capabilities?.automation ? (
+        <section
+          aria-labelledby="automation-title"
+          className="rounded-xl border border-border bg-surface p-5"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="automation-title" className="text-lg font-semibold">
+                YouTube Content ID Automated Scan
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {capabilities.reason}
+              </p>
+            </div>
+            <span className="inline-flex items-center rounded-md bg-accent/20 px-2.5 py-1 text-xs font-semibold text-accent-foreground">
+              Partner API Automation
+            </span>
+          </div>
+
+          {batch.status === "ready" || batch.status === "manual_review" ? (
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              <form action={runContentIdScanAction}>
+                <input type="hidden" name="batchId" value={batch.id} />
+                <Button type="submit">Run automated Content ID scan</Button>
+              </form>
+              <p className="text-xs text-muted-foreground">
+                Uploads the operational MP4 to the private test channel, queries
+                Content ID claims, matches timecodes, and cleans up the test
+                video automatically.
+              </p>
+            </div>
+          ) : batch.status === "completed" ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Automated Content ID scan has been recorded. All track
+              observations are locked below.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section
         aria-labelledby="video-id-title"

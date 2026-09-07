@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PageHeader } from "@/components/shared/page-header";
 import { CopyrightBatchDetail } from "@/features/copyright/components/copyright-batch-detail";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
+import { createCopyrightProvider } from "@/lib/copyright/provider";
 import { getCopyrightBatch } from "@/lib/copyright/repository";
 import { getDatabase } from "@/lib/database/database";
 
@@ -22,13 +23,15 @@ export default async function CopyrightBatchPage({
   );
   const batch = await getCopyrightBatch(getDatabase(), batchId.data);
   if (!batch) notFound();
+  const provider = createCopyrightProvider();
+  const capabilities = provider.getCapabilities();
   return (
     <>
       <PageHeader
         title="Copyright Test Batch"
         description="Private manual-check package and human-recorded observations."
       />
-      <CopyrightBatchDetail batch={batch} />
+      <CopyrightBatchDetail batch={batch} capabilities={capabilities} />
     </>
   );
 }

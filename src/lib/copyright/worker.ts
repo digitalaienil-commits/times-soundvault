@@ -12,12 +12,14 @@ import {
 import { parseCopyrightConfig } from "./config";
 import { createCopyrightTestVideo } from "./ffmpeg";
 import { buildCopyrightManifest } from "./manifest";
+import { createCopyrightProvider } from "./provider";
 import {
   beginBatchBuild,
   claimNextCopyrightJob,
   completeBatchBuild,
   failCopyrightJob,
   loadBatchBuildSources,
+  recordContentIdScanResults,
 } from "./repository";
 
 import type { Pool } from "pg";
@@ -100,6 +102,42 @@ export async function runOneCopyrightJob(
           durationMs: manifest.totalDurationMs,
         }),
       );
+
+      if (config.provider === "youtube_content_id") {
+        try {
+          const provider = createCopyrightProvider(config);
+          if (provider.checkBatch) {
+            const scanResult = await provider.checkBatch({
+              batchId: job.batchId,
+              mp4Path: run.artifactPath,
+            });
+            await recordContentIdScanResults(pool, {
+              batchId: job.batchId,
+              scanResult,
+              actorUserId: "",
+            });
+            console.info(
+              JSON.stringify({
+                event: "copyright_batch_content_id_scanned",
+                batchId: job.batchId,
+                claimsCount: scanResult.claims.length,
+                isSimulated: scanResult.isSimulated,
+              }),
+            );
+          }
+        } catch (scanError) {
+          console.error(
+            JSON.stringify({
+              event: "copyright_batch_content_id_scan_failed",
+              batchId: job.batchId,
+              error:
+                scanError instanceof Error
+                  ? scanError.message
+                  : String(scanError),
+            }),
+          );
+        }
+      }
     } finally {
       await run.cleanup();
     }

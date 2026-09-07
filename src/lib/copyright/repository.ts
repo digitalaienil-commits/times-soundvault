@@ -19,6 +19,10 @@ import { assessChecklist } from "./eligibility";
 import { buildCopyrightManifest } from "./manifest";
 import type { ManifestSource } from "./manifest";
 import { observationInputSchema, youtubeVideoIdSchema } from "./validation";
+import {
+  mapClaimsToManifestItems,
+  type ContentIdScanResult,
+} from "./youtube-content-id";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
 
@@ -1213,4 +1217,230 @@ export async function getBatchArtifactMetadata(
   return row
     ? { artifactKey: row.artifact_key, expiresAt: row.expires_at }
     : null;
+}
+
+export async function recordContentIdScanResults(
+  pool: Pool,
+  input: {
+    batchId: string;
+    scanResult: ContentIdScanResult;
+    actorUserId: string;
+  },
+): Promise<{ recordedClaims: number; completedChecks: number }> {
+  return withTransaction(pool, async (client) => {
+    const batchRes = await client.query<
+      {
+        id: string;
+        status: string;
+        created_by_user_id: string;
+      } & QueryResultRow
+    >(
+      `SELECT id, status, created_by_user_id
+       FROM rights.copyright_batch
+       WHERE id=$1 FOR UPDATE`,
+      [input.batchId],
+    );
+    if (!batchRes.rows.length) {
+      throw new Error("Copyright batch not found");
+    }
+
+    const effectiveActor =
+      input.actorUserId || batchRes.rows[0].created_by_user_id;
+
+    await client.query(
+      `UPDATE rights.copyright_batch
+       SET youtube_video_id = $2, status = 'completed', completed_at = now()
+       WHERE id = $1`,
+      [input.batchId, input.scanResult.videoId],
+    );
+
+    const itemsRes = await client.query<
+      {
+        id: string;
+        copyright_check_id: string;
+        sequence: number;
+        title: string;
+        start_ms: number;
+        end_ms: number;
+      } & QueryResultRow
+    >(
+      `SELECT id, copyright_check_id, sequence, title, start_ms, end_ms
+       FROM rights.copyright_batch_item
+       WHERE batch_id = $1
+       ORDER BY sequence FOR UPDATE`,
+      [input.batchId],
+    );
+
+    const items = itemsRes.rows.map((r) => ({
+      id: String(r.id),
+      copyrightCheckId: String(r.copyright_check_id),
+      sequence: Number(r.sequence),
+      title: String(r.title),
+      startMs: Number(r.start_ms),
+      endMs: Number(r.end_ms),
+    }));
+
+    const matches = mapClaimsToManifestItems(items, input.scanResult.claims);
+    let recordedClaims = 0;
+    let completedChecks = 0;
+
+    for (const match of matches) {
+      const existing = await client.query(
+        `SELECT 1 FROM rights.copyright_observation WHERE batch_item_id = $1`,
+        [match.item.id],
+      );
+      if ((existing.rowCount ?? 0) > 0) {
+        continue;
+      }
+
+      if (match.claims.length > 0) {
+        for (const claim of match.claims) {
+          const observationId = randomUUID();
+          const isInternal =
+            match.hasInternalClaim && !match.hasThirdPartyClaim;
+          const observationType = isInternal
+            ? "existing_internal_reference"
+            : "content_id_claim";
+          const outcome = isInternal
+            ? "existing_internal_claim"
+            : "third_party_claim_observed";
+
+          await client.query(
+            `INSERT INTO rights.copyright_observation (
+               id, copyright_check_id, batch_item_id, observation_type,
+               youtube_video_id, youtube_claim_id, youtube_asset_id,
+               claimant_name, claim_status, claim_policy, match_start_ms,
+               match_end_ms, matching_duration_ms, notes,
+               observed_by_user_id, observed_at
+             ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now())`,
+            [
+              observationId,
+              match.item.copyrightCheckId,
+              match.item.id,
+              observationType,
+              input.scanResult.videoId,
+              claim.claimId,
+              claim.assetId,
+              claim.claimantName,
+              claim.status,
+              claim.policy,
+              claim.matchStartMs,
+              claim.matchEndMs,
+              claim.matchEndMs - claim.matchStartMs,
+              `Automated Content ID match: ${claim.claimantName} (${claim.policy})`,
+              effectiveActor,
+            ],
+          );
+
+          await client.query(
+            `UPDATE rights.copyright_check
+             SET status = 'completed', outcome = $2, completed_at = now(), row_version = row_version + 1
+             WHERE id = $1`,
+            [match.item.copyrightCheckId, outcome],
+          );
+
+          await client.query(
+            `INSERT INTO rights.copyright_check_event
+             (id, copyright_check_id, actor_user_id, event_type, severity, event_metadata)
+             VALUES ($1,$2,$3,'claim_observed','info',$4)`,
+            [
+              randomUUID(),
+              match.item.copyrightCheckId,
+              effectiveActor,
+              {
+                observationId,
+                claimId: claim.claimId,
+                claimant: claim.claimantName,
+              },
+            ],
+          );
+
+          await client.query(
+            `INSERT INTO rights.copyright_check_event
+             (id, copyright_check_id, actor_user_id, event_type, event_metadata)
+             VALUES ($1,$2,$3,'check_completed',$4)`,
+            [
+              randomUUID(),
+              match.item.copyrightCheckId,
+              effectiveActor,
+              { outcome },
+            ],
+          );
+
+          recordedClaims++;
+        }
+        completedChecks++;
+      } else {
+        const observationId = randomUUID();
+        await client.query(
+          `INSERT INTO rights.copyright_observation (
+             id, copyright_check_id, batch_item_id, observation_type,
+             youtube_video_id, notes, observed_by_user_id, observed_at
+           ) VALUES ($1,$2,$3,'no_claim',$4,$5,$6,now())`,
+          [
+            observationId,
+            match.item.copyrightCheckId,
+            match.item.id,
+            input.scanResult.videoId,
+            input.scanResult.isSimulated
+              ? "Automated Content ID scan (simulated): No claim observed"
+              : "Automated Content ID scan: No claim observed",
+            effectiveActor,
+          ],
+        );
+
+        await client.query(
+          `UPDATE rights.copyright_check
+           SET status = 'completed', outcome = 'no_claim_observed', completed_at = now(), row_version = row_version + 1
+           WHERE id = $1`,
+          [match.item.copyrightCheckId],
+        );
+
+        await client.query(
+          `INSERT INTO rights.copyright_check_event
+           (id, copyright_check_id, actor_user_id, event_type, event_metadata)
+           VALUES ($1,$2,$3,'no_claim_observed',$4)`,
+          [
+            randomUUID(),
+            match.item.copyrightCheckId,
+            effectiveActor,
+            { observationId, batchId: input.batchId },
+          ],
+        );
+
+        await client.query(
+          `INSERT INTO rights.copyright_check_event
+           (id, copyright_check_id, actor_user_id, event_type, event_metadata)
+           VALUES ($1,$2,$3,'check_completed',$4)`,
+          [
+            randomUUID(),
+            match.item.copyrightCheckId,
+            effectiveActor,
+            { outcome: "no_claim_observed" },
+          ],
+        );
+
+        completedChecks++;
+      }
+    }
+
+    await client.query(
+      `INSERT INTO rights.copyright_check_event
+       (id, batch_id, actor_user_id, event_type, severity, event_metadata)
+       VALUES ($1,$2,$3,'manual_video_recorded','info',$4)`,
+      [
+        randomUUID(),
+        input.batchId,
+        effectiveActor,
+        {
+          youtubeVideoId: input.scanResult.videoId,
+          isSimulated: input.scanResult.isSimulated,
+          claimsCount: recordedClaims,
+          checksCompleted: completedChecks,
+        },
+      ],
+    );
+
+    return { recordedClaims, completedChecks };
+  });
 }

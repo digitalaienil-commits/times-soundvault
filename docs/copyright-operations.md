@@ -33,19 +33,21 @@ paths and mode-restricted directories, expire, and stream only after an Admin or
 Coordinator is reauthenticated and authorized. Responses use attachment,
 `private, no-store` and `nosniff` headers. Producers cannot download a batch.
 
-## Future live integration
+## Content ID integration
 
-IT and the YouTube team must later confirm ENIL Content Manager API entitlement,
-Content Owner ID, an approved Google account, OAuth client and redirect URI,
-approved scopes, dedicated test channel ID, match-policy IDs if required, and
-authorization for automatic reference delivery. Content ID API access is
-restricted to eligible YouTube content partners; CMS access alone must not be
-treated as API entitlement. OAuth scopes must be requested only when the live
-feature exists.
+`COPYRIGHT_PROVIDER=youtube_content_id` connects the YouTube Content ID automation pipeline.
+It supports:
 
-Future-only variables are `YOUTUBE_CONTENT_ID_ENABLED=false`,
-`YOUTUBE_CONTENT_OWNER_ID` and `YOUTUBE_TEST_CHANNEL_ID`. Access and refresh
-tokens do not belong in environment templates or SoundVault logs.
+- Resumable video upload of the test batch to a private test channel (`YOUTUBE_TEST_CHANNEL_ID`).
+- Content ID Partner API claim polling (`https://www.googleapis.com/youtube/partner/v1/claims`).
+- Millisecond-exact timecode matching against batch tracks.
+- Automatic cleanup of the temporary test video upon scan completion.
+- Safe offline simulation when `YOUTUBE_CONTENT_ID_DRY_RUN=true`.
 
-YouTube Content ID/CMS automation is not connected or live-tested. Section 6
-uses a manual operational workflow and is API-ready.
+Required credentials (strictly server-side, never `NEXT_PUBLIC_`):
+
+- `YOUTUBE_CONTENT_OWNER_ID`: ENIL / Times partner Content Owner ID.
+- `YOUTUBE_CLIENT_ID`: Google OAuth2 client ID.
+- `YOUTUBE_CLIENT_SECRET`: Google OAuth2 client secret.
+- `YOUTUBE_REFRESH_TOKEN`: Authorized refresh token with YouTube Partner and Data scopes.
+- `YOUTUBE_TEST_CHANNEL_ID`: Dedicated unlisted test channel.

@@ -8,9 +8,17 @@ import { parseCopyrightConfig } from "@/lib/copyright/config";
 import type { EligibilityChecklist } from "@/lib/copyright/eligibility";
 import { ELIGIBILITY_QUESTIONS } from "@/lib/copyright/eligibility";
 import {
+  resolveArtifactPath,
+  resolveCopyrightRoot,
+} from "@/lib/copyright/artifacts";
+import { createCopyrightProvider } from "@/lib/copyright/provider";
+import {
   createCopyrightBatch,
+  getBatchArtifactMetadata,
+  getCopyrightBatch,
   markRemainingBatchItemsNoClaim,
   recordBatchVideoId,
+  recordContentIdScanResults,
   recordCopyrightObservation,
   recordEligibilityReview,
   recordYouTubeReferenceLink,
@@ -142,5 +150,43 @@ export async function recordReferenceLinkAction(formData: FormData) {
     assetId: field(formData, "assetId") || null,
     actorUserId: user.id,
   });
+  revalidatePath("/copyright");
+}
+
+export async function runContentIdScanAction(formData: FormData) {
+  const user = await requirePermission("copyright.record", "/copyright");
+  const batchId = field(formData, "batchId");
+  const config = parseCopyrightConfig();
+  const provider = createCopyrightProvider(config);
+
+  const batch = await getCopyrightBatch(getDatabase(), batchId);
+  if (!batch) throw new Error("Copyright batch not found");
+
+  const artifact = await getBatchArtifactMetadata(getDatabase(), batchId);
+  if (!artifact) {
+    throw new Error("Test batch MP4 artifact is not available or has expired");
+  }
+
+  const root = resolveCopyrightRoot(config.root);
+  const mp4Path = resolveArtifactPath(root, artifact.artifactKey);
+
+  if (!provider.checkBatch) {
+    throw new Error(
+      "The active copyright provider does not support automated scanning",
+    );
+  }
+
+  const scanResult = await provider.checkBatch({
+    batchId,
+    mp4Path,
+  });
+
+  await recordContentIdScanResults(getDatabase(), {
+    batchId,
+    scanResult,
+    actorUserId: user.id,
+  });
+
+  revalidatePath(`/copyright/batches/${batchId}`);
   revalidatePath("/copyright");
 }

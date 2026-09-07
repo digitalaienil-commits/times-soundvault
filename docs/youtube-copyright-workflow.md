@@ -12,10 +12,25 @@ SoundVault
   -> SoundVault retains revision-bound status and audit history
 ```
 
-`COPYRIGHT_PROVIDER=manual_youtube` is honest manual mode. SoundVault does not
-upload to YouTube, query a video, retrieve claims, resolve a claim, deliver a
-reference, submit a dispute or request a takedown. A strict 11-character video
-ID is stored as human evidence; the server never fetches the corresponding URL.
+## Content ID automation mode
+
+```text
+SoundVault
+  -> prepare a private Master-only test batch and manifest
+  -> if COPYRIGHT_PROVIDER=youtube_content_id:
+     -> upload batch MP4 to dedicated private test channel via YouTube Data API
+     -> poll YouTube Partner API (claims.list) for Content ID claims
+     -> correlate detected claims to batch items by timecode window
+     -> insert append-only copyright observations (content_id_claim or no_claim)
+     -> delete temporary test video from private test channel
+  -> Coordinator/Admin can review findings, override, or supersede observations
+  -> SoundVault retains revision-bound status and complete audit history
+```
+
+`COPYRIGHT_PROVIDER=youtube_content_id` enables automated Content ID checking:
+
+- In dry-run mode (`YOUTUBE_CONTENT_ID_DRY_RUN=true`), safe offline simulation runs without network calls or billing.
+- In live mode (`YOUTUBE_CONTENT_ID_DRY_RUN=false`), server-side OAuth2 credentials (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN`, `YOUTUBE_CONTENT_OWNER_ID`) are used to scan private test uploads and query partner claims.
 
 No claim observed means: “No Content ID claim was observed on this test upload.
 This does not prove copyright ownership or guarantee that future claims will
@@ -30,9 +45,6 @@ note and an observation date and writes a high-severity audit event.
 
 The copyright axis can be awaiting technical processing, ready, packaging,
 awaiting manual upload/review, completed, failed or cancelled without changing
-the Submission lifecycle. Observations retain human, time, method, check round,
-Revision and Track provenance. Corrections insert a superseding observation;
-they never overwrite the earlier record.
-
-YouTube Content ID/CMS automation is not connected or live-tested. Section 6
-uses a manual operational workflow and is API-ready.
+the Submission lifecycle. Observations retain human or automated system, time,
+method, check round, Revision and Track provenance. Corrections insert a
+superseding observation; they never overwrite the earlier record.
