@@ -45,6 +45,11 @@ pnpm storage:verify
 pnpm dev
 ```
 
+Reaching the dev server from anything other than `localhost` (a tunnel, or a
+LAN address) also needs that hostname in `ALLOWED_DEV_ORIGINS`. Next.js blocks
+cross-origin dev requests by default, and without it the page renders but never
+hydrates, so no button or field responds.
+
 Uploads, analysis and playback derivatives are durable queues. Run
 `pnpm workers` in a second terminal, or a submission stays queued and no
 technical or AI results ever appear. Copyright batches are operator-initiated,
