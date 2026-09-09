@@ -190,8 +190,16 @@ async function processRevision(
       });
       return;
     } catch (error) {
+      // Essentia's WebAssembly build throws bare numbers rather than Errors,
+      // so a plain `instanceof Error` check discards the only clue there is.
       const message =
-        error instanceof Error ? error.message : "AI metadata analysis failed";
+        error instanceof Error
+          ? error.message
+          : `AI metadata analysis failed (${typeof error}: ${String(error)})`;
+      console.error(
+        `[processing] AI metadata analysis failed revision=${job.submissionRevisionId}`,
+        error,
+      );
       await upsertQcIssues(pool, job.submissionRevisionId, [
         {
           audioFileId: master.source.audioFileId,

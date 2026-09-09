@@ -1,3 +1,4 @@
+import { getDatabase } from "@/lib/database/database";
 import { parseMediaConfig } from "@/lib/media/config";
 import { runOneMediaJob } from "@/lib/media/worker";
 import { getScriptEnvironment } from "./environment";
@@ -12,15 +13,21 @@ async function main() {
   process.once("SIGTERM", () => {
     stopping = true;
   });
-  while (!stopping) {
-    const results = await Promise.all(
-      Array.from({ length: config.jobConcurrency }, (_, index) =>
-        runOneMediaJob(`media-${process.pid}-${index}`),
-      ),
-    );
-    if (!results.some((result) => result.processed)) {
-      await new Promise((resolve) => setTimeout(resolve, 1_000));
+  try {
+    while (!stopping) {
+      const results = await Promise.all(
+        Array.from({ length: config.jobConcurrency }, (_, index) =>
+          runOneMediaJob(`media-${process.pid}-${index}`),
+        ),
+      );
+      if (!results.some((result) => result.processed)) {
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+      }
     }
+  } finally {
+    // The connection pool keeps the event loop alive, so without this the
+    // worker ignores SIGTERM and a rolling restart has to kill it.
+    await getDatabase().end();
   }
 }
 

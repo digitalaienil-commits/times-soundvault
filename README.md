@@ -45,6 +45,11 @@ pnpm storage:verify
 pnpm dev
 ```
 
+Uploads, analysis and playback derivatives are durable queues. Run
+`pnpm workers` in a second terminal, or a submission stays queued and no
+technical or AI results ever appear. Copyright batches are operator-initiated,
+so `pnpm copyright:worker` is separate and only needed for that flow.
+
 Open [http://localhost:3000](http://localhost:3000). `auth:setup-local` creates
 an ignored `.env.local` with generated local-only credentials and refuses to
 overwrite an existing file. It never prints passwords. Developers who do not
@@ -118,6 +123,7 @@ pnpm domain:status   # report applied, pending or changed domain migrations
 pnpm storage:verify  # validate private local or OneDrive configuration
 pnpm uploads:cleanup # dry-run expired/cancelled draft cleanup
 pnpm data:cleanup    # dry-run local runtime data cleanup; --confirm to apply
+pnpm workers          # run processing, media and embedding workers together
 pnpm processing:worker
 pnpm processing:once
 pnpm processing:reconcile

@@ -99,8 +99,13 @@ pnpm uploads:cleanup -- --confirm    # cancelled and expired draft sessions
 ```
 
 Workers claim work under a lease and are safe to run more than one of. On
-shutdown, send `SIGTERM` and allow the current job to finish; an interrupted
-job returns to the queue when its lease expires.
+shutdown, send `SIGTERM` and allow the current job to finish; each worker
+closes its connection pool and exits, and an interrupted job returns to the
+queue when its lease expires.
+
+For local development `pnpm workers` runs the processing, media and embedding
+workers in one terminal. It refuses to run under `NODE_ENV=production`, where
+each worker belongs in its own supervised process.
 
 ## 8. Smoke tests
 

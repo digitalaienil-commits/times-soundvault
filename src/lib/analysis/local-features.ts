@@ -106,6 +106,55 @@ function loadEssentia(): EssentiaPackage {
   return require("essentia.js") as EssentiaPackage;
 }
 
+/**
+ * Spectral flatness over real analysis frames.
+ *
+ * `Spectrum` performs an FFT over whatever it is given. Passing a whole track
+ * returned a meaningless 0 for medium files and aborted the Essentia
+ * WebAssembly heap on longer ones, which failed AI analysis for real uploads.
+ * Averaging evenly spaced frames is both safe and actually representative.
+ */
+const FLATNESS_FRAME_SIZE = 2048;
+const FLATNESS_FRAME_COUNT = 16;
+
+function averageSpectralFlatness(
+  essentia: EssentiaInstance,
+  signal: Float32Array,
+): number | null {
+  if (signal.length < FLATNESS_FRAME_SIZE) return null;
+
+  const usableFrames = Math.floor(signal.length / FLATNESS_FRAME_SIZE);
+  const frameCount = Math.min(FLATNESS_FRAME_COUNT, usableFrames);
+  const stride = Math.floor(usableFrames / frameCount);
+  let total = 0;
+  let counted = 0;
+
+  for (let index = 0; index < frameCount; index += 1) {
+    const start = index * stride * FLATNESS_FRAME_SIZE;
+    let frameVector: EssentiaVector | undefined;
+    let windowedFrame: EssentiaVector | undefined;
+    let spectrum: EssentiaVector | undefined;
+    try {
+      frameVector = essentia.arrayToVector(
+        signal.slice(start, start + FLATNESS_FRAME_SIZE),
+      );
+      windowedFrame = essentia.Windowing(frameVector).frame;
+      if (!windowedFrame) continue;
+      spectrum = essentia.Spectrum(windowedFrame).spectrum;
+      if (!spectrum) continue;
+      const flatness = essentia.Flatness(spectrum).flatness;
+      if (typeof flatness === "number" && Number.isFinite(flatness)) {
+        total += flatness;
+        counted += 1;
+      }
+    } finally {
+      dispose(spectrum, windowedFrame, frameVector);
+    }
+  }
+
+  return counted > 0 ? total / counted : null;
+}
+
 export function extractEssentiaFeaturesFromSignal(
   signal: Float32Array,
   sampleRateHz: number,
@@ -122,8 +171,6 @@ export function extractEssentiaFeaturesFromSignal(
   let rhythmTicks: EssentiaVector | undefined;
   let rhythmEstimates: EssentiaVector | undefined;
   let rhythmIntervals: EssentiaVector | undefined;
-  let frame: EssentiaVector | undefined;
-  let spectrum: EssentiaVector | undefined;
 
   try {
     const rhythm = essentia.RhythmExtractor2013(vector);
@@ -152,10 +199,6 @@ export function extractEssentiaFeaturesFromSignal(
     const dance = essentia.Danceability(vector);
     danceDfa = dance.dfa;
     const dynamic = essentia.DynamicComplexity(vector);
-    const windowed = essentia.Windowing(vector);
-    frame = windowed.frame;
-    const spectrumResult = frame ? essentia.Spectrum(frame) : {};
-    spectrum = spectrumResult.spectrum;
 
     return {
       source: "essentia.js",
@@ -177,24 +220,17 @@ export function extractEssentiaFeaturesFromSignal(
         essentia.SpectralCentroidTime(vector, sampleRateHz).centroid,
         2,
       ),
-      spectralFlatness: spectrum
-        ? finiteNumber(essentia.Flatness(spectrum).flatness, 6)
-        : null,
+      spectralFlatness: finiteNumber(
+        averageSpectralFlatness(essentia, signal),
+        6,
+      ),
       zeroCrossingRate: finiteNumber(
         essentia.ZeroCrossingRate(vector).zeroCrossingRate,
         6,
       ),
     };
   } finally {
-    dispose(
-      danceDfa,
-      rhythmTicks,
-      rhythmEstimates,
-      rhythmIntervals,
-      spectrum,
-      frame,
-      vector,
-    );
+    dispose(danceDfa, rhythmTicks, rhythmEstimates, rhythmIntervals, vector);
     essentia.shutdown?.();
   }
 }
