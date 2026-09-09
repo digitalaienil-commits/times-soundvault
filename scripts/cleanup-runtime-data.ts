@@ -61,6 +61,7 @@ const RUNTIME_TABLES = [
   "system.admin_audit_event",
   "system.integrity_finding",
   "system.maintenance_job",
+  "system.rate_limit_counter",
   "system.worker_heartbeat",
   "workflow.ai_generation_record",
   "workflow.change_request",
