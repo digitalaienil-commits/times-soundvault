@@ -20,6 +20,26 @@ function accessError(error: unknown, stage: "ACCOUNT" | "SESSION"): APIError {
   });
 }
 
+/**
+ * Sign-in attempt budget.
+ *
+ * Production always uses the hardened value: the environment cannot loosen it.
+ * Outside production the ceiling may be raised so the end-to-end suite, which
+ * signs in for almost every test, is not throttled by its own coverage.
+ */
+export function signInAttemptLimit(
+  nodeEnvironment = process.env.NODE_ENV,
+): number {
+  const hardened = 8;
+  if (nodeEnvironment === "production") {
+    return hardened;
+  }
+  const configured = Number(process.env.AUTH_SIGN_IN_RATE_LIMIT_MAX);
+  return Number.isSafeInteger(configured) && configured > hardened
+    ? configured
+    : hardened;
+}
+
 function toSoundVaultProvider(providerId: string) {
   if (providerId === "credential") {
     return "local" as const;
@@ -71,7 +91,9 @@ export function createSoundVaultAuth(
         ? {
             enabled: true,
             disableSignUp: !options.allowLocalSignUp,
-            minPasswordLength: 12,
+            // This credential provider is constructed only for the guarded,
+            // non-production local auth mode above.
+            minPasswordLength: 8,
             maxPasswordLength: 128,
           }
         : { enabled: false },
@@ -110,7 +132,7 @@ export function createSoundVaultAuth(
       window: 60,
       max: 100,
       customRules: {
-        "/sign-in/email": { window: 60, max: 8 },
+        "/sign-in/email": { window: 60, max: signInAttemptLimit() },
         "/sign-in/social": { window: 60, max: 20 },
       },
     },

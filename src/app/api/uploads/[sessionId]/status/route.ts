@@ -1,5 +1,6 @@
 import { getDatabase } from "@/lib/database/database";
 import { getApiUser, safeUploadError } from "@/lib/domain/uploads/api";
+import { readJsonBody } from "@/lib/http/request-body";
 import { assertCanMutateUploadSubmission } from "@/lib/domain/uploads/authorization";
 import {
   getUploadSessionAccess,
@@ -63,7 +64,14 @@ export async function PATCH(
   if (user instanceof Response) return user;
   try {
     const { sessionId } = await context.params;
-    const body = (await request.json()) as { action?: string };
+    const parsed = await readJsonBody<{ action?: string }>(request, 4 * 1024);
+    if (parsed.kind === "too-large") {
+      return Response.json(
+        { error: "Upload action request is too large" },
+        { status: 413 },
+      );
+    }
+    const body = parsed.kind === "ok" ? parsed.value : {};
     if (body.action !== "pause" && body.action !== "resume") {
       return Response.json(
         { error: "Upload action must be pause or resume" },

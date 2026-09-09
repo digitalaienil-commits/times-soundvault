@@ -56,27 +56,44 @@ databaseDescribe("Section 13 PGVector and Track Embeddings Integration", () => {
     publishedRevisionId = randomUUID();
     const submissionId = randomUUID();
 
-    // Insert published track
+    // Publication is a separate action in the product, and the search
+    // projection trigger resolves the published Revision, so the Track is
+    // created unpublished and promoted once its Revision exists.
     await pool.query(
       `INSERT INTO catalog.track (
-         id, asset_kind, title, description, publication_status,
-         published_revision_id, published_by_user_id, published_at, created_by_user_id
-       ) VALUES ($1, 'music', 'Diwali Dhol Beats', 'High energy celebration percussion', 'published', $2, $3, now(), $3)`,
-      [publishedTrackId, publishedRevisionId, userId],
+         id, asset_kind, title, description, publication_status, created_by_user_id
+       ) VALUES ($1, 'music', 'Diwali Dhol Beats', 'High energy celebration percussion', 'unpublished', $2)`,
+      [publishedTrackId, userId],
     );
 
     await pool.query(
       `INSERT INTO workflow.submission (
-         id, track_id, owner_user_id, status, current_revision_id, latest_revision_number
-       ) VALUES ($1, $2, $3, 'approved', $4, 1)`,
-      [submissionId, publishedTrackId, userId, publishedRevisionId],
+         id, track_id, owner_user_id, status, latest_revision_number
+       ) VALUES ($1, $2, $3, 'approved', 0)`,
+      [submissionId, publishedTrackId, userId],
     );
 
     await pool.query(
       `INSERT INTO workflow.submission_revision (
-         id, submission_id, revision_number, created_by_user_id, revision_status
-       ) VALUES ($1, $2, 1, $3, 'accepted')`,
+         id, submission_id, revision_number, created_by_user_id, revision_status,
+         producer_metadata, submitted_at
+       ) VALUES ($1, $2, 1, $3, 'accepted', '{}'::jsonb, now())`,
       [publishedRevisionId, submissionId, userId],
+    );
+
+    await pool.query(
+      `UPDATE workflow.submission
+          SET current_revision_id = $2, latest_revision_number = 1
+        WHERE id = $1`,
+      [submissionId, publishedRevisionId],
+    );
+
+    await pool.query(
+      `UPDATE catalog.track
+          SET publication_status = 'published', published_revision_id = $2,
+              published_by_user_id = $3, published_at = now()
+        WHERE id = $1`,
+      [publishedTrackId, publishedRevisionId, userId],
     );
 
     await pool.query(
@@ -152,20 +169,34 @@ databaseDescribe("Section 13 PGVector and Track Embeddings Integration", () => {
     const sub2Id = randomUUID();
     await pool.query(
       `INSERT INTO catalog.track (
-         id, asset_kind, title, description, publication_status,
-         published_revision_id, published_by_user_id, published_at, created_by_user_id
-       ) VALUES ($1, 'music', 'Bhangra Dhol Festival', 'Punjabi celebration dhol rhythms', 'published', $2, $3, now(), $3)`,
-      [track2Id, rev2Id, userId],
+         id, asset_kind, title, description, publication_status, created_by_user_id
+       ) VALUES ($1, 'music', 'Bhangra Dhol Festival', 'Punjabi celebration dhol rhythms', 'unpublished', $2)`,
+      [track2Id, userId],
     );
     await pool.query(
-      `INSERT INTO workflow.submission (id, track_id, owner_user_id, status, current_revision_id, latest_revision_number)
-       VALUES ($1, $2, $3, 'approved', $4, 1)`,
-      [sub2Id, track2Id, userId, rev2Id],
+      `INSERT INTO workflow.submission (id, track_id, owner_user_id, status, latest_revision_number)
+       VALUES ($1, $2, $3, 'approved', 0)`,
+      [sub2Id, track2Id, userId],
     );
     await pool.query(
-      `INSERT INTO workflow.submission_revision (id, submission_id, revision_number, created_by_user_id, revision_status)
-       VALUES ($1, $2, 1, $3, 'accepted')`,
+      `INSERT INTO workflow.submission_revision
+       (id, submission_id, revision_number, created_by_user_id, revision_status,
+        producer_metadata, submitted_at)
+       VALUES ($1, $2, 1, $3, 'accepted', '{}'::jsonb, now())`,
       [rev2Id, sub2Id, userId],
+    );
+    await pool.query(
+      `UPDATE workflow.submission
+          SET current_revision_id = $2, latest_revision_number = 1
+        WHERE id = $1`,
+      [sub2Id, rev2Id],
+    );
+    await pool.query(
+      `UPDATE catalog.track
+          SET publication_status = 'published', published_revision_id = $2,
+              published_by_user_id = $3, published_at = now()
+        WHERE id = $1`,
+      [track2Id, rev2Id, userId],
     );
 
     await enqueueMissingEmbeddings(pool, {

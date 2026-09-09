@@ -7,7 +7,6 @@ import type { Pool, PoolClient, QueryResultRow } from "pg";
 import type { CurrentUser } from "@/types/auth";
 import type {
   AcceptedAudioExtension,
-  CreateUploadBatchInput,
   CreatedUploadBatch,
   UploadSessionDto,
   UploadWorkspaceFile,
@@ -138,7 +137,9 @@ async function loadCreatedBatch(
 export async function createUploadDraftBatch(
   pool: Pool,
   user: CurrentUser,
-  input: CreateUploadBatchInput,
+  // Untrusted request input: the schema below is the validation boundary, so
+  // the caller is not required to have proved the shape first.
+  input: unknown,
   config: StorageConfig,
   provider: StorageProvider,
 ): Promise<CreatedUploadBatch> {

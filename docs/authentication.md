@@ -4,16 +4,16 @@
 
 Times SoundVault uses Better Auth 1.6.29 with PostgreSQL 17. Better Auth owns
 user, account and database-session lifecycle. Local credentials are enabled
-only outside production; the sign-in screen uses them server-side to enter any
-of the four seeded roles without exposing or requesting a password. Production
-uses exactly one configured corporate provider (`google` or `microsoft`). There
-is no public registration route.
+only outside production; the sign-in screen accepts the email and password of
+one of the four seeded local identities. Production uses exactly one configured
+corporate provider (`google` or `microsoft`). There is no public registration
+route.
 
 The direct local entry endpoint accepts only `POST`, requires the exact
 configured localhost origin and returns `404` for production or non-local
 provider configurations. Role-boundary browser tests continue to authenticate
-their seeded identities through the same local role selector used for manual
-testing.
+their seeded identities through the local credential form. The direct endpoint
+is retained only as a localhost-bound test helper.
 
 `src/lib/auth/auth-factory.ts` is the single configuration factory used by the
 application and operational scripts. Security-relevant choices include:

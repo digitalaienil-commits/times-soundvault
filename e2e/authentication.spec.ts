@@ -10,36 +10,34 @@ const testDatabase = databaseUrl
 const identities = {
   admin: {
     email: process.env.LOCAL_ADMIN_EMAIL ?? "",
-    accessName: "Admin",
+    password: process.env.LOCAL_ADMIN_PASSWORD ?? "",
   },
   producer: {
     email: process.env.LOCAL_PRODUCER_EMAIL ?? "",
-    accessName: "Music Producer",
+    password: process.env.LOCAL_PRODUCER_PASSWORD ?? "",
   },
   coordinator: {
     email: process.env.LOCAL_COORDINATOR_EMAIL ?? "",
-    accessName: "Coordinator",
+    password: process.env.LOCAL_COORDINATOR_PASSWORD ?? "",
   },
   user: {
     email: process.env.LOCAL_USER_EMAIL ?? "",
-    accessName: "User",
+    password: process.env.LOCAL_USER_PASSWORD ?? "",
   },
 };
 
 async function signIn(
   page: Page,
-  identity: { email: string; accessName: string },
+  identity: { email: string; password: string },
   expectedPath: string,
   callbackUrl = expectedPath,
 ) {
   expect(identity.email).not.toBe("");
+  expect(identity.password).not.toBe("");
   await page.goto(`/sign-in?callbackUrl=${encodeURIComponent(callbackUrl)}`);
-  await page
-    .getByRole("button", {
-      name: `Enter as ${identity.accessName}`,
-      exact: true,
-    })
-    .click();
+  await page.getByLabel("Email").fill(identity.email);
+  await page.getByLabel("Password").fill(identity.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(
     new RegExp(`${expectedPath.replace("/", "\\/")}$`),
   );
@@ -175,29 +173,11 @@ test("unauthenticated routes preserve safe callbacks and Sign In is accessible",
   ).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: /role/i })).toHaveCount(0);
 
-  const accessNames = ["Admin", "Music Producer", "Coordinator", "User"];
-  for (const accessName of accessNames) {
-    await expect(
-      page.getByRole("button", {
-        name: `Enter as ${accessName}`,
-        exact: true,
-      }),
-    ).toBeVisible();
-  }
-  await page
-    .getByRole("button", { name: "Enter as Admin", exact: true })
-    .focus();
-  for (const accessName of accessNames) {
-    await expect(
-      page.getByRole("button", {
-        name: `Enter as ${accessName}`,
-        exact: true,
-      }),
-    ).toBeFocused();
-    if (accessName !== accessNames.at(-1)) {
-      await page.keyboard.press("Tab");
-    }
-  }
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Sign in", exact: true }),
+  ).toBeVisible();
 
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
@@ -211,11 +191,7 @@ test("unauthenticated routes preserve safe callbacks and Sign In is accessible",
 });
 
 test("malicious callbacks fail closed", async ({ page }) => {
-  await page.goto("/sign-in?callbackUrl=https://evil.example");
-  await page
-    .getByRole("button", { name: "Enter as Admin", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
+  await signIn(page, identities.admin, "/dashboard", "https://evil.example");
 });
 
 test("Admin sees every route and can manage pending access", async ({
@@ -368,10 +344,10 @@ test("User lands in Library and cannot reach privileged routes", async ({
   page,
 }) => {
   await signIn(page, identities.user, "/library", "/");
+  // The page heading is asserted on its own: on a clean database the empty
+  // state adds a second heading, and matching both is ambiguous.
   await expect(
-    page.getByRole("heading", {
-      name: /Published Library|No published tracks yet|Published tracks/,
-    }),
+    page.getByRole("heading", { level: 1, name: "Published Library" }),
   ).toBeVisible();
   await expectNavigation(
     page,

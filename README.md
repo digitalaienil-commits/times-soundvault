@@ -25,8 +25,10 @@ protected route and sensitive mutation also checks permission on the server.
 
 - Node.js 24.18.1 (see `.nvmrc`)
 - pnpm 11.20.0
-- PostgreSQL 17 (a native service is recommended for low-storage development;
-  Compose remains available but is not required)
+- PostgreSQL 17 with the `pg_trgm` and `vector` extensions (a native service is
+  recommended for low-storage development; Compose remains available but is not
+  required). A database owner must create both extensions before migrating,
+  because the migration runner is not a superuser.
 
 ## Local setup
 
@@ -52,12 +54,12 @@ set `search_path` before running `pnpm auth:migrate` and `pnpm domain:migrate`.
 For Homebrew, start it with `brew services start postgresql@17`. No Docker
 Desktop is needed.
 
-Local authentication exposes four direct role choices for the seeded Admin,
-Music Producer, Coordinator and User identities. Every configured credential
-stays server-side, there is no Sign Up UI, and the selector is rejected when
-`NODE_ENV=production`, the provider is not `local`, or the request origin is not
-the exact configured localhost origin. Google Workspace and Microsoft Entra
-configuration are documented in
+Local authentication exposes an email-and-password form for the four seeded
+Admin, Music Producer, Coordinator and User identities. There is no Sign Up UI,
+and credential authentication is rejected when `NODE_ENV=production` or the
+provider is not `local`. The direct role helper remains restricted to the exact
+configured localhost origin for automated role-boundary tests. Google Workspace
+and Microsoft Entra configuration are documented in
 [docs/auth-provider-setup.md](docs/auth-provider-setup.md).
 
 ## Authentication operations
@@ -96,6 +98,7 @@ prints safe assignment metadata only.
 | `/copyright`              | Admin, Coordinator                               |
 | `/copyright/batches/[id]` | Admin, Coordinator                               |
 | `/demands`                | Admin, Music Producer, Coordinator               |
+| `/generate`               | Admin, Music Producer, Coordinator               |
 | `/team`                   | Admin                                            |
 | `/admin`                  | Admin                                            |
 | `/admin/*`                | Admin                                            |
@@ -114,6 +117,7 @@ pnpm domain:migrate  # apply checksummed catalog/workflow/rights migrations
 pnpm domain:status   # report applied, pending or changed domain migrations
 pnpm storage:verify  # validate private local or OneDrive configuration
 pnpm uploads:cleanup # dry-run expired/cancelled draft cleanup
+pnpm data:cleanup    # dry-run local runtime data cleanup; --confirm to apply
 pnpm processing:worker
 pnpm processing:once
 pnpm processing:reconcile
@@ -230,6 +234,32 @@ See [docs/youtube-copyright-workflow.md](docs/youtube-copyright-workflow.md),
 [docs/content-id-readiness.md](docs/content-id-readiness.md) and
 [docs/copyright-operations.md](docs/copyright-operations.md).
 
+## Production hardening
+
+Section 14 adds deployment hardening on top of the existing role and workflow
+guarantees. See [the deployment runbook](docs/deployment-runbook.md) and
+[the production environment checklist](docs/production-environment-checklist.md).
+
+Every response carries `X-Content-Type-Options`, `X-Frame-Options: DENY`,
+`Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy` and
+`Cross-Origin-Resource-Policy`; production adds `Strict-Transport-Security`.
+`src/proxy.ts` issues a per-request Content Security Policy with a single-use
+script nonce, `frame-ancestors 'none'`, `object-src 'none'` and
+`form-action 'self'`. `'unsafe-eval'` is development-only. Inline styles remain
+allowed because React renders `style` attributes for waveforms and meters.
+
+Sensitive endpoints read bounded JSON bodies through `readJsonBody` and consume
+a durable fixed-window budget from `system.rate_limit_counter`: AI generation,
+draft commits, upload session creation and delivery package requests. The
+sign-in budget is hardened in production and cannot be loosened by the
+environment. Unexpected failures return a generic message plus a log reference;
+provider text, SQL and storage keys never reach the browser.
+
+`pnpm data:cleanup` removes disposable local runtime records and generated
+private artifacts, restores the controlled taxonomy, and preserves migrations,
+schema and tests. It is dry-run by default, refuses `NODE_ENV=production` and
+refuses any non-localhost database.
+
 ## Brand asset
 
 The shell and authentication screens use the supplied Times Group logo from
@@ -245,7 +275,9 @@ proportions. See [public/brand/README.md](public/brand/README.md).
 - YouTube Content ID automation runs in safe dry-run mode by default; live scanning
   requires authorized partner credentials (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`,
   `YOUTUBE_REFRESH_TOKEN`, `YOUTUBE_CONTENT_OWNER_ID`).
-- Production deployment is not yet covered by this repository milestone.
+- Production deployment is documented and the application is deployment-ready,
+  but no production environment has been provisioned or deployed from this
+  repository yet.
 - Live AI provider calls require approved Google or ElevenLabs credentials and
   are not executed by the repository test suite.
 - The OneDrive adapter is covered with mocked HTTP tests. Live Microsoft Graph

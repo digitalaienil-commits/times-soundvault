@@ -17,6 +17,7 @@
     "domain:status": "tsx scripts/domain-status.ts",
     "storage:verify": "node --conditions=react-server --import tsx scripts/verify-storage.ts",
     "uploads:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-uploads.ts",
+    "data:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-runtime-data.ts",
     "processing:once": "node --conditions=react-server --import tsx scripts/processing-once.ts",
     "processing:worker": "node --conditions=react-server --import tsx scripts/processing-worker.ts",
     "processing:reconcile": "node --conditions=react-server --import tsx scripts/processing-reconcile.ts",

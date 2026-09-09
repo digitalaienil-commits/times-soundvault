@@ -8,23 +8,29 @@ const database = databaseUrl
   : null;
 
 const identities = {
-  producer: { accessName: "Music Producer" },
-  coordinator: { accessName: "Coordinator" },
-  user: { accessName: "User" },
+  producer: {
+    email: process.env.LOCAL_PRODUCER_EMAIL ?? "",
+    password: process.env.LOCAL_PRODUCER_PASSWORD ?? "",
+  },
+  coordinator: {
+    email: process.env.LOCAL_COORDINATOR_EMAIL ?? "",
+    password: process.env.LOCAL_COORDINATOR_PASSWORD ?? "",
+  },
+  user: {
+    email: process.env.LOCAL_USER_EMAIL ?? "",
+    password: process.env.LOCAL_USER_PASSWORD ?? "",
+  },
 };
 
 async function signIn(
   page: Page,
-  identity: { accessName: string },
+  identity: { email: string; password: string },
   expectedPath: string,
 ) {
   await page.goto(`/sign-in?callbackUrl=${encodeURIComponent(expectedPath)}`);
-  await page
-    .getByRole("button", {
-      name: `Enter as ${identity.accessName}`,
-      exact: true,
-    })
-    .click();
+  await page.getByLabel("Email").fill(identity.email);
+  await page.getByLabel("Password").fill(identity.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(
     new RegExp(`${expectedPath.replaceAll("/", "\\/")}$`),
   );

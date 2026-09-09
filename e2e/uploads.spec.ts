@@ -4,19 +4,19 @@ import { expect, test, type Page } from "@playwright/test";
 const identities = {
   admin: {
     email: process.env.LOCAL_ADMIN_EMAIL ?? "",
-    accessName: "Admin",
+    password: process.env.LOCAL_ADMIN_PASSWORD ?? "",
   },
   producer: {
     email: process.env.LOCAL_PRODUCER_EMAIL ?? "",
-    accessName: "Music Producer",
+    password: process.env.LOCAL_PRODUCER_PASSWORD ?? "",
   },
   coordinator: {
     email: process.env.LOCAL_COORDINATOR_EMAIL ?? "",
-    accessName: "Coordinator",
+    password: process.env.LOCAL_COORDINATOR_PASSWORD ?? "",
   },
   user: {
     email: process.env.LOCAL_USER_EMAIL ?? "",
-    accessName: "User",
+    password: process.env.LOCAL_USER_PASSWORD ?? "",
   },
 };
 
@@ -63,17 +63,15 @@ const mp3File = (name: string) => ({
 
 async function signIn(
   page: Page,
-  identity: { email: string; accessName: string },
+  identity: { email: string; password: string },
   expectedPath: string,
 ) {
   expect(identity.email).not.toBe("");
+  expect(identity.password).not.toBe("");
   await page.goto(`/sign-in?callbackUrl=${encodeURIComponent(expectedPath)}`);
-  await page
-    .getByRole("button", {
-      name: `Enter as ${identity.accessName}`,
-      exact: true,
-    })
-    .click();
+  await page.getByLabel("Email").fill(identity.email);
+  await page.getByLabel("Password").fill(identity.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(
     new RegExp(`${expectedPath.replace("/", "\\/")}$`),
   );

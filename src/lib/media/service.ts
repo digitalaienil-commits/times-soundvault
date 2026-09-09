@@ -10,6 +10,17 @@ import {
 } from "./repository";
 import { packageFilename } from "./packages";
 
+/**
+ * A limit the requester can understand and act on. Only these messages are
+ * safe to return to the browser; every other failure stays generic.
+ */
+export class MediaPackageLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MediaPackageLimitError";
+  }
+}
+
 export async function requestDownloadPackage(input: {
   trackId: string;
   scope: "stems" | "full";
@@ -28,9 +39,11 @@ export async function requestDownloadPackage(input: {
     0,
   );
   if (subject.sources.length > config.packageMaxFiles)
-    throw new Error(`Package exceeds the ${config.packageMaxFiles}-file limit`);
+    throw new MediaPackageLimitError(
+      `Package exceeds the ${config.packageMaxFiles}-file limit`,
+    );
   if (sourceBytes > config.packageMaxSourceBytes)
-    throw new Error("Package exceeds the 20 GiB source limit");
+    throw new MediaPackageLimitError("Package exceeds the 20 GiB source limit");
   const fingerprint = packageSourceFingerprint(
     subject.revisionId,
     input.scope,

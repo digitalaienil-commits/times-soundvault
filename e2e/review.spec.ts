@@ -18,16 +18,22 @@ const storageKey = `submissions/${submissionId}/revisions/1/${audioFileId}.wav`;
 const reviewTitle = `Section Seven Review Bed ${submissionId.slice(0, 8)}`;
 
 const identities = {
-  admin: { email: process.env.LOCAL_ADMIN_EMAIL ?? "", accessName: "Admin" },
+  admin: {
+    email: process.env.LOCAL_ADMIN_EMAIL ?? "",
+    password: process.env.LOCAL_ADMIN_PASSWORD ?? "",
+  },
   producer: {
     email: process.env.LOCAL_PRODUCER_EMAIL ?? "",
-    accessName: "Music Producer",
+    password: process.env.LOCAL_PRODUCER_PASSWORD ?? "",
   },
   coordinator: {
     email: process.env.LOCAL_COORDINATOR_EMAIL ?? "",
-    accessName: "Coordinator",
+    password: process.env.LOCAL_COORDINATOR_PASSWORD ?? "",
   },
-  user: { email: process.env.LOCAL_USER_EMAIL ?? "", accessName: "User" },
+  user: {
+    email: process.env.LOCAL_USER_EMAIL ?? "",
+    password: process.env.LOCAL_USER_PASSWORD ?? "",
+  },
 };
 
 async function signIn(
@@ -36,12 +42,9 @@ async function signIn(
   path: string,
 ) {
   await page.goto(`/sign-in?callbackUrl=${encodeURIComponent(path)}`);
-  await page
-    .getByRole("button", {
-      name: `Enter as ${identity.accessName}`,
-      exact: true,
-    })
-    .click();
+  await page.getByLabel("Email").fill(identity.email);
+  await page.getByLabel("Password").fill(identity.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
 
 function wav() {

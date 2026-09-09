@@ -2,13 +2,29 @@ import "server-only";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthState } from "@/lib/auth/current-user";
+import { unexpectedErrorResponse } from "@/lib/http/error-response";
+import { consumeRateLimit, RATE_LIMITS } from "@/lib/http/rate-limit";
+import { readJsonBody } from "@/lib/http/request-body";
 import {
   generateAudioDraft,
   saveGeneratedTrackAsDraft,
   GenerationServiceError,
 } from "@/lib/generation/service";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/** Prompts and parameters are small; anything larger is not a real request. */
+const GENERATION_BODY_LIMIT_BYTES = 32 * 1024;
+
+function rateLimited(retryAfterSeconds: number): NextResponse {
+  const response = NextResponse.json(
+    { error: "Too many generation requests. Please wait and try again." },
+    { status: 429 },
+  );
+  response.headers.set("Retry-After", String(retryAfterSeconds));
+  return response;
+}
 
 export async function POST(request: NextRequest) {
   const state = await getAuthState();
@@ -19,49 +35,84 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  try {
-    const body = (await request.json()) as {
-      action?: string;
-      [key: string]: unknown;
-    };
+  const body = await readJsonBody<{ action?: string; [key: string]: unknown }>(
+    request,
+    GENERATION_BODY_LIMIT_BYTES,
+  );
+  if (body.kind === "too-large") {
+    return NextResponse.json(
+      { error: "Generation request is too large." },
+      { status: 413 },
+    );
+  }
+  if (body.kind === "invalid") {
+    return NextResponse.json(
+      { error: "Generation request body must be JSON." },
+      { status: 400 },
+    );
+  }
+  const payload = body.value;
 
-    if (body.action === "generate") {
+  try {
+    if (payload.action === "generate") {
+      const limit = await consumeRateLimit(
+        RATE_LIMITS.generation,
+        state.user.id,
+      );
+      if (!limit.allowed) {
+        return rateLimited(limit.retryAfterSeconds);
+      }
+
       const result = await generateAudioDraft(state.user, {
-        assetKind: body.assetKind === "sound_effect" ? "sound_effect" : "music",
-        prompt: String(body.prompt ?? ""),
-        provider: body.provider as
+        assetKind:
+          payload.assetKind === "sound_effect" ? "sound_effect" : "music",
+        prompt: String(payload.prompt ?? ""),
+        provider: payload.provider as
           "google_lyria" | "elevenlabs" | "simulated" | undefined,
-        model: body.model ? String(body.model) : undefined,
+        model: payload.model ? String(payload.model) : undefined,
         durationSeconds:
-          typeof body.durationSeconds === "number" ? body.durationSeconds : 30,
+          typeof payload.durationSeconds === "number"
+            ? payload.durationSeconds
+            : 30,
         instrumentalOnly:
-          typeof body.instrumentalOnly === "boolean"
-            ? body.instrumentalOnly
+          typeof payload.instrumentalOnly === "boolean"
+            ? payload.instrumentalOnly
             : true,
-        tempoBpm: typeof body.tempoBpm === "number" ? body.tempoBpm : null,
-        genre: body.genre ? String(body.genre) : null,
-        seed: typeof body.seed === "number" ? body.seed : null,
-        loop: typeof body.loop === "boolean" ? body.loop : undefined,
+        tempoBpm:
+          typeof payload.tempoBpm === "number" ? payload.tempoBpm : null,
+        genre: payload.genre ? String(payload.genre) : null,
+        seed: typeof payload.seed === "number" ? payload.seed : null,
+        loop: typeof payload.loop === "boolean" ? payload.loop : undefined,
         promptInfluence:
-          typeof body.promptInfluence === "number"
-            ? body.promptInfluence
+          typeof payload.promptInfluence === "number"
+            ? payload.promptInfluence
             : null,
       });
 
       return NextResponse.json({ ok: true, data: result });
     }
 
-    if (body.action === "save_draft") {
+    if (payload.action === "save_draft") {
+      const limit = await consumeRateLimit(
+        RATE_LIMITS.generationCommit,
+        state.user.id,
+      );
+      if (!limit.allowed) {
+        return rateLimited(limit.retryAfterSeconds);
+      }
+
       const result = await saveGeneratedTrackAsDraft(state.user, {
-        generationId: String(body.generationId ?? ""),
-        workingTitle: body.workingTitle ? String(body.workingTitle) : undefined,
+        generationId: String(payload.generationId ?? ""),
+        workingTitle: payload.workingTitle
+          ? String(payload.workingTitle)
+          : undefined,
       });
 
       return NextResponse.json({ ok: true, data: result });
     }
 
     return NextResponse.json(
-      { error: `Unsupported generation action: ${body.action}` },
+      { error: "Unsupported generation action." },
       { status: 400 },
     );
   } catch (error) {
@@ -73,8 +124,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const message =
-      error instanceof Error ? error.message : "Generation failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return unexpectedErrorResponse("api/generation", error);
   }
 }

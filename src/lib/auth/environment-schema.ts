@@ -14,9 +14,9 @@ const emailSchema = z
   .email()
   .transform((value) => value.toLowerCase());
 const secretSchema = z.string().min(32, "must contain at least 32 characters");
-const passwordSchema = z
+const localPasswordSchema = z
   .string()
-  .min(12, "must contain at least 12 characters");
+  .min(8, "local passwords must contain at least 8 characters");
 
 export interface LocalIdentityConfig {
   name: string;
@@ -105,7 +105,7 @@ function parseLocalIdentity(
   return {
     name: readRequired(raw, `LOCAL_${prefix}_NAME`),
     email: emailSchema.parse(readRequired(raw, `LOCAL_${prefix}_EMAIL`)),
-    password: passwordSchema.parse(
+    password: localPasswordSchema.parse(
       readRequired(raw, `LOCAL_${prefix}_PASSWORD`),
     ),
   };

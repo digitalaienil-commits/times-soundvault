@@ -189,20 +189,48 @@ test.afterAll(async () => {
   await fixturePool.end();
 });
 
-async function enterLibrary(page: Page, accessName: string) {
+// Matches the other end-to-end specs: signing in, generating previews and
+// streaming ranges is slower than the default per-test budget.
+test.setTimeout(90_000);
+
+const userIdentity = {
+  email: process.env.LOCAL_USER_EMAIL ?? "",
+  password: process.env.LOCAL_USER_PASSWORD ?? "",
+};
+
+const libraryIdentities = [
+  {
+    email: process.env.LOCAL_ADMIN_EMAIL ?? "",
+    password: process.env.LOCAL_ADMIN_PASSWORD ?? "",
+  },
+  {
+    email: process.env.LOCAL_PRODUCER_EMAIL ?? "",
+    password: process.env.LOCAL_PRODUCER_PASSWORD ?? "",
+  },
+  {
+    email: process.env.LOCAL_COORDINATOR_EMAIL ?? "",
+    password: process.env.LOCAL_COORDINATOR_PASSWORD ?? "",
+  },
+  userIdentity,
+];
+
+async function enterLibrary(
+  page: Page,
+  identity: { email: string; password: string },
+) {
   await page.goto("/sign-in?callbackUrl=%2Flibrary");
-  await page
-    .getByRole("button", { name: `Enter as ${accessName}`, exact: true })
-    .click();
+  await page.getByLabel("Email").fill(identity.email);
+  await page.getByLabel("Password").fill(identity.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/library$/);
   await page.waitForLoadState("networkidle");
 }
 
 test("all four roles can reach the published library", async ({ browser }) => {
-  for (const role of ["Admin", "Music Producer", "Coordinator", "User"]) {
+  for (const identity of libraryIdentities) {
     const context = await browser.newContext();
     const page = await context.newPage();
-    await enterLibrary(page, role);
+    await enterLibrary(page, identity);
     await expect(
       page.getByRole("heading", { name: "Published Library" }),
     ).toBeVisible();
@@ -213,7 +241,7 @@ test("all four roles can reach the published library", async ({ browser }) => {
 test("library search is keyboard accessible and rejects exclusion-only queries", async ({
   page,
 }) => {
-  await enterLibrary(page, "User");
+  await enterLibrary(page, userIdentity);
   const search = page.getByRole("searchbox", {
     name: "Search published library",
   });
@@ -234,7 +262,7 @@ test("library search is keyboard accessible and rejects exclusion-only queries",
 
 test("mobile filters open as a labelled sheet", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await enterLibrary(page, "User");
+  await enterLibrary(page, userIdentity);
   await page.getByRole("button", { name: /^Filters/ }).click();
   await expect(
     page.getByRole("dialog", { name: "Filter library" }),
@@ -246,7 +274,7 @@ test("player persists across Library navigation, switches to a Stem, streams ran
   page,
 }) => {
   await page.setViewportSize({ width: 1024, height: 768 });
-  await enterLibrary(page, "User");
+  await enterLibrary(page, userIdentity);
   const card = page
     .getByRole("article")
     .filter({ hasText: "Published Media E2E" })

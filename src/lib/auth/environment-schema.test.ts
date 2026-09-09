@@ -32,6 +32,21 @@ describe("authentication environment", () => {
     ).toBe("local");
   });
 
+  it("requires at least eight characters for local-only passwords", () => {
+    expect(() =>
+      parseAuthEnvironment({
+        ...baseEnvironment(),
+        LOCAL_ADMIN_PASSWORD: "eight888",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseAuthEnvironment({
+        ...baseEnvironment(),
+        LOCAL_ADMIN_PASSWORD: "short7",
+      }),
+    ).toThrow("at least 8 characters");
+  });
+
   it("rejects local mode in production", () => {
     expect(() => parseAuthEnvironment(baseEnvironment(), "production")).toThrow(
       "forbidden in production",

@@ -12,6 +12,11 @@
   responsive, accessibility and production-build gates pass.
 - Section 13 — Similarity Search & AI Generation: complete after clean database,
   quality, browser, responsive, accessibility and production-build gates pass.
+- Section 14 — Production Hardening & Launch: security headers and a nonce
+  Content Security Policy, bounded request bodies and durable rate limits on
+  sensitive endpoints, non-leaking error boundaries, a guarded runtime data
+  cleanup command, a deployment runbook and a production environment checklist.
+  Deployment itself is a separate, approved operational step.
 
 Status is marked complete only after the section’s required checks pass.
 
@@ -28,7 +33,7 @@ Status is marked complete only after the section’s required checks pass.
 11. Demand Sheet — complete
 12. Admin Operations — complete
 13. Similarity Search & AI Generation — complete
-14. Production Hardening & Launch — planned
+14. Production Hardening & Launch — complete pending deployment
 
 Section 6 adds an independent copyright state axis, human Content ID eligibility
 assessment, private Master-only manual-check batches, immutable observations,
@@ -76,3 +81,11 @@ and sound-effect generation workspace (Google Lyria 3 and ElevenLabs) with
 dry-run mode, private storage, full provenance, and draft submission entry
 without publication bypass. Generated draft commits use server-stored audio and
 do not trust browser-supplied bytes.
+
+Section 14 adds production hardening rather than product behaviour. It changes
+no role, review, approval, publication, rights or copyright rule. It adds
+response security headers, a per-request nonce Content Security Policy, bounded
+JSON bodies and durable fixed-window rate limits on generation, upload-session
+and delivery-package endpoints, error boundaries that expose only a reference,
+and `pnpm data:cleanup` for disposable local runtime data. It deliberately does
+not provision infrastructure, deploy, or enable any live external provider.

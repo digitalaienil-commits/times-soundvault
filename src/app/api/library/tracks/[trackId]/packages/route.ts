@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { getAuthState } from "@/lib/auth/current-user";
 import { hasPermission } from "@/lib/auth/permissions";
-import { requestDownloadPackage } from "@/lib/media/service";
+import { unexpectedErrorResponse } from "@/lib/http/error-response";
+import { consumeRateLimit, RATE_LIMITS } from "@/lib/http/rate-limit";
+import { readJsonBody } from "@/lib/http/request-body";
+import {
+  MediaPackageLimitError,
+  requestDownloadPackage,
+} from "@/lib/media/service";
 
 export const runtime = "nodejs";
 const UUID =
@@ -26,12 +32,30 @@ export async function POST(
       { error: "Published track not found" },
       { status: 404 },
     );
-  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+  const body = await readJsonBody(request, 4 * 1024);
+  if (body.kind === "too-large")
+    return Response.json(
+      { error: "Package request is too large" },
+      { status: 413 },
+    );
+  const parsed = bodySchema.safeParse(body.kind === "ok" ? body.value : null);
   if (!parsed.success)
     return Response.json(
       { error: "Select a valid package type" },
       { status: 400 },
     );
+  const limit = await consumeRateLimit(
+    RATE_LIMITS.deliveryPackage,
+    state.user.id,
+  );
+  if (!limit.allowed) {
+    const response = Response.json(
+      { error: "Too many package requests. Please wait and try again." },
+      { status: 429 },
+    );
+    response.headers.set("Retry-After", String(limit.retryAfterSeconds));
+    return response;
+  }
   try {
     const result = await requestDownloadPackage({
       trackId,
@@ -51,14 +75,9 @@ export async function POST(
         )
       : Response.json({ error: "Published track not found" }, { status: 404 });
   } catch (error) {
-    return Response.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Package could not be queued",
-      },
-      { status: 422 },
-    );
+    if (error instanceof MediaPackageLimitError) {
+      return Response.json({ error: error.message }, { status: 422 });
+    }
+    return unexpectedErrorResponse("api/library/packages", error);
   }
 }

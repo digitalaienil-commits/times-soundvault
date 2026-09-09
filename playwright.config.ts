@@ -34,6 +34,9 @@ export default defineConfig({
       PORT: port,
       BETTER_AUTH_URL: baseURL,
       AUTH_TRUSTED_ORIGINS: baseURL,
+      // Almost every spec signs in, so the hardened production budget would
+      // throttle the suite itself. Production ignores this value.
+      AUTH_SIGN_IN_RATE_LIMIT_MAX: "500",
     },
   },
 });
