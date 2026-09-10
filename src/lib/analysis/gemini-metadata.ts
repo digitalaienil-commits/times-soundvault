@@ -74,6 +74,11 @@ export const geminiMetadataSchema = z.object({
   key: nullableString,
   timeSignature: nullableString,
   energy: z.union([z.string(), z.number()]).nullable().default(null),
+  /**
+   * Numeric counterpart of `energy`. Review stores energy as a 0-1 score, so a
+   * categorical label alone ("very high") could never be accepted there.
+   */
+  energyScore: nullableNumber,
   energyDynamics: nullableString,
   valence: nullableNumber,
   arousal: nullableNumber,
@@ -178,6 +183,7 @@ function normalizeMetadata(
       ? cleanText(parsed.timeSignature, 20)
       : fallback.timeSignature,
     energy: parsed.energy ?? fallback.energy,
+    energyScore: clamp01(parsed.energyScore ?? fallback.energyScore),
     energyDynamics: parsed.energyDynamics
       ? cleanText(parsed.energyDynamics, 80)
       : fallback.energyDynamics,
@@ -213,6 +219,17 @@ function normalizeMetadata(
           : { arousal: clamp01(segment.arousal) ?? undefined }),
       })),
   };
+}
+
+/**
+ * A measured 0-1 energy score from local features, so the review field has a
+ * usable value even when the provider omits one. Derived from loudness rather
+ * than translated from a categorical label, which would invent precision.
+ */
+function energyScoreFromFeatures(features: LocalMusicFeatures): number | null {
+  const rms = features.rms;
+  if (rms == null || !Number.isFinite(rms)) return null;
+  return Math.round(Math.min(1, Math.max(0, rms / 0.35)) * 100) / 100;
 }
 
 function energyLabel(features: LocalMusicFeatures): string | null {
@@ -257,6 +274,7 @@ export function buildLocalMetadataFallback(input: {
     key,
     timeSignature: null,
     energy,
+    energyScore: energyScoreFromFeatures(input.features),
     energyDynamics:
       input.features.dynamicComplexity == null
         ? null

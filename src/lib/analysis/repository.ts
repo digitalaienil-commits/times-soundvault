@@ -23,6 +23,7 @@ const SUGGESTION_FIELDS: Array<keyof NormalizedAnalysisResult> = [
   "timeSignature",
   "energy",
   "energyDynamics",
+  "energyScore",
   "valence",
   "arousal",
   "vocalState",

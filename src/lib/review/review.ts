@@ -75,7 +75,7 @@ function aiKey(field: ReviewFieldName): string {
     keyTonic: "key",
     keyMode: "key",
     timeSignature: "time_signature",
-    energyScore: "energy",
+    energyScore: "energy_score",
     valence: "valence",
     arousal: "arousal",
     vocalState: "vocal_state",

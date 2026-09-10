@@ -29,3 +29,17 @@ describe("review validation", () => {
     ).toBe(false);
   });
 });
+
+describe("AI energy suggestion is usable in review", () => {
+  it("accepts the numeric energy score the provider now returns", () => {
+    // Review stores energy as a 0-1 score. The provider used to supply only a
+    // categorical label, so choosing "AI suggestion" for Energy always failed
+    // with "Invalid input".
+    expect(parseReviewFieldValue("energyScore", "0.82")).toBe(0.82);
+    expect(parseReviewFieldValue("energyScore", "")).toBeNull();
+  });
+
+  it("still rejects a categorical label", () => {
+    expect(() => parseReviewFieldValue("energyScore", "very high")).toThrow();
+  });
+});

@@ -76,6 +76,8 @@ export interface NormalizedAnalysisResult {
   key: string | null;
   timeSignature: string | null;
   energy: string | number | null;
+  /** 0-1 counterpart of `energy`; review stores energy as a score. */
+  energyScore: number | null;
   energyDynamics: string | null;
   valence: number | null;
   arousal: number | null;
