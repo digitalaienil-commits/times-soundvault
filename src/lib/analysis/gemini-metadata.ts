@@ -239,7 +239,7 @@ export function unwrapMetadataObject(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-function buildPrompt(input: {
+export function buildPrompt(input: {
   source: ProcessingSourceFile;
   probe: ProbedAudio;
   measurements: AudioMeasurements;
@@ -250,18 +250,29 @@ function buildPrompt(input: {
   return JSON.stringify(
     {
       instruction: input.hasAudio
-        ? "Act as SoundVault's internal metadata assistant. An audio excerpt of this track is attached: listen to it and describe what you actually hear. Return exactly one JSON object matching outputShape, never an array. Use the attached audio for genres, subgenres, moods, instruments, character, movement and the caption, and prefer the supplied FFmpeg/ffprobe and Essentia measurements for tempo, key and loudness. Never infer content from the filename alone. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] only when the audio genuinely does not support a value."
+        ? "Act as SoundVault's internal metadata assistant. An audio excerpt of this track is attached: listen to it and describe what you actually hear. The title and filename are withheld on purpose: judge genre, mood, instruments and character from the audio alone. Return exactly one JSON object matching outputShape, never an array. Use the attached audio for genres, subgenres, moods, instruments, character, movement and the caption, and prefer the supplied FFmpeg/ffprobe and Essentia measurements for tempo, key and loudness. Never infer content from the filename alone. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] only when the audio genuinely does not support a value."
         : "Act as SoundVault's internal metadata assistant. Return exactly one JSON object matching outputShape, never an array. No audio is attached, so describe only what the supplied FFmpeg/ffprobe facts and Essentia music features support, and do not guess genres, moods or instruments from the filename. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] when uncertain.",
       outputShape: Object.keys(geminiMetadataSchema.shape),
-      source: {
-        displayTitle: input.source.displayTitle,
-        originalFilename: input.source.originalFilename,
-        assetRole: input.source.assetRole,
-      },
+      // With audio attached the title and filename are deliberately withheld.
+      // Leaving them in steered the model hard: a file named "...breaking news
+      // urgent..." came back "urgent, tense, suspenseful", while the same audio
+      // analysed blind was consistently "uplifting, hopeful, epic". The asset
+      // role is structural rather than semantic, so it stays.
+      source: input.hasAudio
+        ? { assetRole: input.source.assetRole }
+        : {
+            displayTitle: input.source.displayTitle,
+            originalFilename: input.source.originalFilename,
+            assetRole: input.source.assetRole,
+          },
       ffprobe: input.probe,
       ffmpegMeasurements: input.measurements,
       essentiaFeatures: input.features,
-      localFallback: input.fallback,
+      // The fallback caption embeds the working title, so it is withheld for
+      // the same reason.
+      localFallback: input.hasAudio
+        ? { ...input.fallback, transformerCaption: null }
+        : input.fallback,
     },
     null,
     2,

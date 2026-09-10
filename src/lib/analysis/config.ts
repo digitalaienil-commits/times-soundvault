@@ -17,8 +17,8 @@ const environmentSchema = z.object({
   ESSENTIA_MAX_DURATION_SECONDS: positiveInteger(180),
   AI_ANALYSIS_AUDIO_ENABLED: z.string().trim().optional(),
   AI_ANALYSIS_AUDIO_MAX_SECONDS: positiveInteger(120),
-  AI_ANALYSIS_AUDIO_BITRATE_KBPS: positiveInteger(64),
-  AI_ANALYSIS_AUDIO_SAMPLE_RATE_HZ: positiveInteger(24_000),
+  AI_ANALYSIS_AUDIO_BITRATE_KBPS: positiveInteger(128),
+  AI_ANALYSIS_AUDIO_SAMPLE_RATE_HZ: positiveInteger(44_100),
   AI_ANALYSIS_AUDIO_MAX_BYTES: positiveInteger(12 * 1024 * 1024),
   GEMINI_API_KEY: z.string().trim().optional(),
 });

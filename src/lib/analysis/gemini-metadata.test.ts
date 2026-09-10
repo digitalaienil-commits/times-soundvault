@@ -4,7 +4,11 @@ import type { AudioMeasurements } from "@/lib/audio/ffmpeg";
 import type { ProbedAudio } from "@/lib/audio/ffprobe";
 import type { ProcessingSourceFile } from "@/lib/processing/repository";
 
-import { buildLocalMetadataFallback } from "./gemini-metadata";
+import {
+  buildLocalMetadataFallback,
+  buildPrompt,
+  unwrapMetadataObject,
+} from "./gemini-metadata";
 import type { LocalMusicFeatures } from "./local-features";
 
 const source: ProcessingSourceFile = {
@@ -87,12 +91,41 @@ describe("Gemini metadata fallback", () => {
 });
 
 describe("metadata object unwrapping", () => {
-  it("accepts a one-element array from the model", async () => {
+  it("accepts a one-element array from the model", () => {
     // Some models answer an object request with a single-element array. That
     // is a formatting quirk, not a failed analysis, and discarding it lost a
     // complete result.
-    const { unwrapMetadataObject } = await import("./gemini-metadata");
     expect(unwrapMetadataObject([{ bpm: 120 }])).toEqual({ bpm: 120 });
     expect(unwrapMetadataObject({ bpm: 120 })).toEqual({ bpm: 120 });
+  });
+});
+
+describe("prompt filename bias", () => {
+  const source = {
+    displayTitle: "Breaking News Urgent Broadcast",
+    originalFilename: "breaking-news-urgent.mp3",
+    assetRole: "master",
+  };
+  const base = {
+    source,
+    probe: {},
+    measurements: {},
+    features: { bpm: 90 },
+    fallback: { transformerCaption: "Breaking News Urgent Broadcast is ..." },
+  } as never as Parameters<typeof buildPrompt>[0];
+
+  it("withholds the title and filename when audio is attached", () => {
+    const prompt = buildPrompt({ ...base, hasAudio: true });
+
+    expect(prompt).not.toContain("Breaking News Urgent Broadcast");
+    expect(prompt).not.toContain("breaking-news-urgent.mp3");
+    expect(prompt).toContain("master");
+  });
+
+  it("still supplies the title when no audio is available", () => {
+    const prompt = buildPrompt({ ...base, hasAudio: false });
+
+    expect(prompt).toContain("Breaking News Urgent Broadcast");
+    expect(prompt).toContain("breaking-news-urgent.mp3");
   });
 });
