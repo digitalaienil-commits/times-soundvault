@@ -7,6 +7,7 @@ import type { ProcessingSourceFile } from "@/lib/processing/repository";
 import {
   buildLocalMetadataFallback,
   buildPrompt,
+  geminiMetadataSchema,
   unwrapMetadataObject,
 } from "./gemini-metadata";
 import type { LocalMusicFeatures } from "./local-features";
@@ -127,5 +128,45 @@ describe("prompt filename bias", () => {
 
     expect(prompt).toContain("Breaking News Urgent Broadcast");
     expect(prompt).toContain("breaking-news-urgent.mp3");
+  });
+});
+
+describe("tolerant provider parsing", () => {
+  it("accepts model output that is loosely typed", () => {
+    // Real failure: the model returned "0.8" for valence and arousal, and the
+    // strict schema discarded a complete analysis over it.
+    const parsed = geminiMetadataSchema.parse({
+      valence: "0.8",
+      arousal: "0.6",
+      voiceoverDegree: "0",
+      voiceoverExists: "false",
+      bpm: "128",
+      vocalState: "Instrumental",
+      genres: "electronic, synthwave",
+      moods: ["uplifting", "", "hopeful"],
+    });
+
+    expect(parsed.valence).toBe(0.8);
+    expect(parsed.arousal).toBe(0.6);
+    expect(parsed.voiceoverDegree).toBe(0);
+    expect(parsed.voiceoverExists).toBe(false);
+    expect(parsed.bpm).toBe(128);
+    expect(parsed.vocalState).toBe("instrumental");
+    expect(parsed.genres).toEqual(["electronic", "synthwave"]);
+    expect(parsed.moods).toEqual(["uplifting", "hopeful"]);
+  });
+
+  it("nulls values it cannot read instead of failing the whole result", () => {
+    const parsed = geminiMetadataSchema.parse({
+      valence: "very high",
+      vocalState: "nonsense",
+      segments: "not-an-array",
+      moods: ["calm"],
+    });
+
+    expect(parsed.valence).toBeNull();
+    expect(parsed.vocalState).toBeNull();
+    expect(parsed.segments).toEqual([]);
+    expect(parsed.moods).toEqual(["calm"]);
   });
 });

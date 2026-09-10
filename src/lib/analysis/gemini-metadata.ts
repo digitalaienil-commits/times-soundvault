@@ -12,11 +12,59 @@ import type { AiAnalysisConfig } from "./config";
 import type { AnalysisExcerpt } from "@/lib/audio/analysis-excerpt";
 import type { LocalMusicFeatures } from "./local-features";
 
-const textArray = z.array(z.string()).max(12).default([]);
-const nullableNumber = z.number().finite().nullable().default(null);
-const nullableString = z.string().nullable().default(null);
+/**
+ * Provider output is model-generated JSON, not a typed API response. A model
+ * returns "0.8" as readily as 0.8, or a comma-separated string where an array
+ * was asked for. Rejecting the whole document over that discarded an otherwise
+ * complete analysis, so unreadable fields become null or [] and the rest
+ * survives.
+ */
+const textArray = z
+  .preprocess((value) => {
+    const items = Array.isArray(value)
+      ? value
+      : typeof value === "string"
+        ? value.split(",")
+        : [];
+    return items
+      .filter((item): item is string => typeof item === "string")
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 12);
+  }, z.array(z.string()))
+  .default([]);
 
-const geminiMetadataSchema = z.object({
+const nullableNumber = z
+  .preprocess((value) => {
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+    if (typeof value === "string") {
+      const parsed = Number(value.trim());
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return value ?? null;
+  }, z.number().finite().nullable())
+  .default(null);
+
+const nullableString = z
+  .preprocess(
+    (value) => (typeof value === "string" ? value : (value ?? null)),
+    z.string().nullable(),
+  )
+  .default(null);
+
+const nullableBoolean = z
+  .preprocess((value) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+      const text = value.trim().toLowerCase();
+      if (["true", "yes", "1"].includes(text)) return true;
+      if (["false", "no", "0"].includes(text)) return false;
+    }
+    return null;
+  }, z.boolean().nullable())
+  .default(null);
+
+export const geminiMetadataSchema = z.object({
   genres: textArray,
   subgenres: textArray,
   moods: textArray,
@@ -30,11 +78,15 @@ const geminiMetadataSchema = z.object({
   valence: nullableNumber,
   arousal: nullableNumber,
   vocalState: z
-    .enum(["unknown", "instrumental", "vocal", "mixed"])
-    .nullable()
-    .default(null),
+    .preprocess(
+      (value) =>
+        typeof value === "string" ? value.trim().toLowerCase() : value,
+      z.enum(["unknown", "instrumental", "vocal", "mixed"]).nullable(),
+    )
+    .default(null)
+    .catch(null),
   voiceTags: textArray,
-  voiceoverExists: z.boolean().nullable().default(null),
+  voiceoverExists: nullableBoolean,
   voiceoverDegree: nullableNumber,
   character: textArray,
   movement: textArray,
@@ -52,7 +104,8 @@ const geminiMetadataSchema = z.object({
       }),
     )
     .max(24)
-    .default([]),
+    .default([])
+    .catch([]),
 });
 
 export interface UnifiedAiMetadata {
