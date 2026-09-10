@@ -85,3 +85,14 @@ describe("Gemini metadata fallback", () => {
     expect(fallback.transformerCaption).toContain("Morning Drive");
   });
 });
+
+describe("metadata object unwrapping", () => {
+  it("accepts a one-element array from the model", async () => {
+    // Some models answer an object request with a single-element array. That
+    // is a formatting quirk, not a failed analysis, and discarding it lost a
+    // complete result.
+    const { unwrapMetadataObject } = await import("./gemini-metadata");
+    expect(unwrapMetadataObject([{ bpm: 120 }])).toEqual({ bpm: 120 });
+    expect(unwrapMetadataObject({ bpm: 120 })).toEqual({ bpm: 120 });
+  });
+});

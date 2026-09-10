@@ -9,6 +9,7 @@ import type { ProcessingSourceFile } from "@/lib/processing/repository";
 import type { NormalizedAnalysisResult } from "@/types/processing";
 
 import type { AiAnalysisConfig } from "./config";
+import type { AnalysisExcerpt } from "@/lib/audio/analysis-excerpt";
 import type { LocalMusicFeatures } from "./local-features";
 
 const textArray = z.array(z.string()).max(12).default([]);
@@ -223,17 +224,34 @@ export function buildLocalMetadataFallback(input: {
   };
 }
 
+/**
+ * Models occasionally answer an object request with a one-element array. That
+ * is a formatting quirk rather than a failed analysis, so unwrap it instead of
+ * discarding a good result.
+ */
+export function unwrapMetadataObject(value: unknown): Record<string, unknown> {
+  if (Array.isArray(value)) {
+    const first = value.find(
+      (entry) => entry && typeof entry === "object" && !Array.isArray(entry),
+    );
+    if (first) return first as Record<string, unknown>;
+  }
+  return value as Record<string, unknown>;
+}
+
 function buildPrompt(input: {
   source: ProcessingSourceFile;
   probe: ProbedAudio;
   measurements: AudioMeasurements;
   features: LocalMusicFeatures;
   fallback: NormalizedAnalysisResult;
+  hasAudio: boolean;
 }): string {
   return JSON.stringify(
     {
-      instruction:
-        "Act as SoundVault's internal metadata assistant. Return JSON only. Use the supplied FFmpeg/ffprobe facts and Essentia music features. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] when uncertain.",
+      instruction: input.hasAudio
+        ? "Act as SoundVault's internal metadata assistant. An audio excerpt of this track is attached: listen to it and describe what you actually hear. Return exactly one JSON object matching outputShape, never an array. Use the attached audio for genres, subgenres, moods, instruments, character, movement and the caption, and prefer the supplied FFmpeg/ffprobe and Essentia measurements for tempo, key and loudness. Never infer content from the filename alone. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] only when the audio genuinely does not support a value."
+        : "Act as SoundVault's internal metadata assistant. Return exactly one JSON object matching outputShape, never an array. No audio is attached, so describe only what the supplied FFmpeg/ffprobe facts and Essentia music features support, and do not guess genres, moods or instruments from the filename. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] when uncertain.",
       outputShape: Object.keys(geminiMetadataSchema.shape),
       source: {
         displayTitle: input.source.displayTitle,
@@ -306,6 +324,11 @@ export async function createUnifiedAiMetadata(
     probe: ProbedAudio;
     measurements: AudioMeasurements;
     features: LocalMusicFeatures;
+    /**
+     * Bounded excerpt of the Master. Without it the model can only guess from
+     * the filename and numeric features, which yields empty genres and moods.
+     */
+    audio?: AnalysisExcerpt;
   },
 ): Promise<UnifiedAiMetadata> {
   if (!config.geminiApiKey) {
@@ -317,7 +340,27 @@ export async function createUnifiedAiMetadata(
 
   const fallback = buildLocalMetadataFallback(input);
   const client = new GoogleGenAI({ apiKey: config.geminiApiKey });
-  const prompt = buildPrompt({ ...input, fallback });
+  const prompt = buildPrompt({
+    ...input,
+    fallback,
+    hasAudio: Boolean(input.audio),
+  });
+  const contents = input.audio
+    ? [
+        {
+          role: "user" as const,
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: input.audio.mimeType,
+                data: input.audio.bytes.toString("base64"),
+              },
+            },
+          ],
+        },
+      ]
+    : prompt;
   let lastError: AiAnalysisError | null = null;
 
   for (const model of geminiModels(config)) {
@@ -325,7 +368,7 @@ export async function createUnifiedAiMetadata(
       const response = await withTimeout(
         client.models.generateContent({
           model,
-          contents: prompt,
+          contents,
           config: {
             responseMimeType: "application/json",
             temperature: 0.2,
@@ -334,7 +377,7 @@ export async function createUnifiedAiMetadata(
         config.timeoutMs,
       );
       const text = extractText(response);
-      const rawParsed = JSON.parse(text) as Record<string, unknown>;
+      const rawParsed = unwrapMetadataObject(JSON.parse(text));
       const parsed = geminiMetadataSchema.parse(rawParsed);
       return {
         providerVersion: `${model}:essentia-js`,
@@ -346,6 +389,10 @@ export async function createUnifiedAiMetadata(
           essentiaVersion: input.features.essentiaVersion,
           analyzedDurationMs: input.features.analyzedDurationMs,
           sampleRateHz: input.features.sampleRateHz,
+          audioProvided: Boolean(input.audio),
+          audioSeconds: input.audio?.durationSeconds ?? null,
+          audioBytes: input.audio?.bytes.byteLength ?? null,
+          audioBitrateKbps: input.audio?.bitrateKbps ?? null,
         },
         rawResult: rawParsed,
         normalizedResult: normalizeMetadata(parsed, fallback),

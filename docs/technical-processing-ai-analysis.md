@@ -63,3 +63,32 @@ install Node dependencies so Essentia.js is available. Configure
 `ESSENTIA_MAX_DURATION_SECONDS` as server-only variables. Schedule
 reconciliation and cleanup. Monitor structured job records without tokens,
 signed URLs or raw audio.
+
+## Audio reaches the model
+
+Semantic suggestions are produced from the audio itself. Processing encodes a
+bounded excerpt of the Master — mono, `AI_ANALYSIS_AUDIO_SAMPLE_RATE_HZ`,
+`AI_ANALYSIS_AUDIO_BITRATE_KBPS`, capped by `AI_ANALYSIS_AUDIO_MAX_SECONDS` and
+`AI_ANALYSIS_AUDIO_MAX_BYTES` — and attaches it to the provider request
+alongside the ffprobe and Essentia measurements.
+
+The excerpt is an analysis input only. It is never written to disk, never
+becomes a catalog asset and is never delivered to a browser. Source audio stays
+immutable.
+
+Tempo, key and loudness still come from the measurements rather than the model.
+Genres, moods, instruments, character, movement and the caption come from what
+the model hears.
+
+`provider_run.input_metadata` records `audioProvided`, `audioSeconds`,
+`audioBytes` and `audioBitrateKbps`, so a suggestion produced from audio can be
+told apart from one produced from features alone. Rows written before this
+existed have `audioProvided: null` and were inferred largely from the filename;
+re-run processing for that Revision to replace them.
+
+Setting `AI_ANALYSIS_AUDIO_ENABLED=false` falls back to a features-only
+request. The prompt then explicitly forbids guessing genres or moods from the
+filename, so those fields come back empty rather than invented.
+
+Audio input costs materially more than text. Keep the excerpt bounds tight, and
+remember every upload spends provider quota.

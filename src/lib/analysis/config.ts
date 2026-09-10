@@ -15,6 +15,11 @@ const environmentSchema = z.object({
   AI_ANALYSIS_TIMEOUT_MS: positiveInteger(60_000),
   ESSENTIA_SAMPLE_RATE_HZ: positiveInteger(22_050),
   ESSENTIA_MAX_DURATION_SECONDS: positiveInteger(180),
+  AI_ANALYSIS_AUDIO_ENABLED: z.string().trim().optional(),
+  AI_ANALYSIS_AUDIO_MAX_SECONDS: positiveInteger(120),
+  AI_ANALYSIS_AUDIO_BITRATE_KBPS: positiveInteger(64),
+  AI_ANALYSIS_AUDIO_SAMPLE_RATE_HZ: positiveInteger(24_000),
+  AI_ANALYSIS_AUDIO_MAX_BYTES: positiveInteger(12 * 1024 * 1024),
   GEMINI_API_KEY: z.string().trim().optional(),
 });
 
@@ -25,6 +30,12 @@ export interface AiAnalysisConfig {
   timeoutMs: number;
   sampleRateHz: number;
   maxDurationSeconds: number;
+  /** Send a bounded audio excerpt so the model hears the track. */
+  audioEnabled: boolean;
+  audioMaxSeconds: number;
+  audioBitrateKbps: number;
+  audioSampleRateHz: number;
+  audioMaxBytes: number;
   geminiApiKey?: string;
 }
 
@@ -71,6 +82,19 @@ export function parseAiAnalysisConfig(
     timeoutMs: Math.min(parsed.AI_ANALYSIS_TIMEOUT_MS, 180_000),
     sampleRateHz,
     maxDurationSeconds,
+    audioEnabled: booleanEnabled(parsed.AI_ANALYSIS_AUDIO_ENABLED),
+    // Bounded so a long Master cannot turn one submission into a very large
+    // provider bill or a very slow job.
+    audioMaxSeconds: Math.min(parsed.AI_ANALYSIS_AUDIO_MAX_SECONDS, 600),
+    audioBitrateKbps: Math.min(parsed.AI_ANALYSIS_AUDIO_BITRATE_KBPS, 320),
+    audioSampleRateHz: Math.min(
+      Math.max(parsed.AI_ANALYSIS_AUDIO_SAMPLE_RATE_HZ, 8_000),
+      48_000,
+    ),
+    audioMaxBytes: Math.min(
+      parsed.AI_ANALYSIS_AUDIO_MAX_BYTES,
+      20 * 1024 * 1024,
+    ),
     geminiApiKey,
   };
 }

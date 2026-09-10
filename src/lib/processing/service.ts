@@ -2,6 +2,10 @@ import "server-only";
 
 import type { Pool } from "pg";
 
+import {
+  encodeAnalysisExcerpt,
+  type AnalysisExcerpt,
+} from "@/lib/audio/analysis-excerpt";
 import { createUnifiedAiMetadata } from "@/lib/analysis/gemini-metadata";
 import { extractLocalMusicFeatures } from "@/lib/analysis/local-features";
 import { persistUnifiedAiMetadata } from "@/lib/analysis/repository";
@@ -171,11 +175,34 @@ async function processRevision(
         maxDurationSeconds: aiConfig.maxDurationSeconds,
         timeoutMs: aiConfig.timeoutMs,
       });
+      // Give the model the audio itself. Without it the provider can only
+      // guess from the filename and numeric features, which returns empty
+      // genres and moods. A failure here must not fail the whole analysis:
+      // the text-only call still produces technical metadata.
+      let audio: AnalysisExcerpt | undefined;
+      if (aiConfig.audioEnabled) {
+        try {
+          audio = await encodeAnalysisExcerpt(master.localPath, {
+            maxDurationSeconds: aiConfig.audioMaxSeconds,
+            bitrateKbps: aiConfig.audioBitrateKbps,
+            sampleRateHz: aiConfig.audioSampleRateHz,
+            maxBytes: aiConfig.audioMaxBytes,
+            timeoutMs: aiConfig.timeoutMs,
+          });
+        } catch (error) {
+          console.warn(
+            `[processing] analysis excerpt unavailable revision=${job.submissionRevisionId}`,
+            error,
+          );
+        }
+      }
+
       const metadata = await createUnifiedAiMetadata(aiConfig, {
         source: master.source,
         probe: master.probe,
         measurements: master.measurements,
         features,
+        audio,
       });
       await persistUnifiedAiMetadata(pool, {
         source: master.source,
