@@ -8,14 +8,15 @@ import { spawn, type ChildProcess } from "node:child_process";
  * Production supervises each as its own process; this is the developer-machine
  * equivalent.
  *
- * The copyright worker is deliberately absent. Manual-mode Content ID batches
- * are operator-initiated from the Copyright workspace, so the worker has
- * nothing to do until someone asks for a batch. Run `pnpm copyright:worker`
- * alongside this when working on that flow.
+ * The copyright worker is included even though manual-mode batches are
+ * operator-initiated: publication requires a recorded copyright outcome, and
+ * recording one requires a built test batch. Leaving it out meant creating a
+ * batch appeared to hang. It is idle until someone asks for a batch.
  */
 const WORKERS = [
   ["processing", "scripts/processing-worker.ts"],
   ["media", "scripts/media-worker.ts"],
+  ["copyright", "scripts/copyright-worker.ts"],
   ["embedding", "scripts/embedding-worker.ts"],
 ] as const;
 

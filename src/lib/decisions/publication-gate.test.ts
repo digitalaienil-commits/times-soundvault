@@ -51,11 +51,34 @@ describe("evaluatePublicationGate", () => {
       new Date("2026-08-25T00:00:00Z"),
     );
     expect(result.allowed).toBe(false);
-    expect(result.blockers).toEqual(
-      expect.arrayContaining([
-        "Master and composition rights must both be known.",
-      ]),
+    // The blocker names the side that is actually undeclared, and where to fix
+    // it. Composition is "owned" here, so only Master should be reported.
+    const rightsBlocker = result.blockers.find((blocker) =>
+      blocker.includes("rights are undeclared"),
     );
+    expect(rightsBlocker).toContain("Master recording");
+    expect(rightsBlocker).not.toContain("Composition");
+    expect(rightsBlocker).toContain("Upload workspace");
+  });
+
+  it("names both sides when neither is declared", () => {
+    const result = evaluatePublicationGate({
+      ...ready,
+      rights: {
+        masterRightsBasis: "unknown",
+        compositionRightsBasis: "unknown",
+        validUntil: null,
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(
+      result.blockers.some(
+        (blocker) =>
+          blocker.includes("Master recording and Composition") &&
+          blocker.includes("undeclared"),
+      ),
+    ).toBe(true);
   });
 
   it("allows explicit not applicable copyright but never labels it clear", () => {

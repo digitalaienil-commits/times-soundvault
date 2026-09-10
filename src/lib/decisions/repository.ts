@@ -297,9 +297,16 @@ function assertApprovalPacket(packet: PacketData) {
     formats.length !== 1 ||
     formats[0]!.slug.replaceAll("-", "_") !== format
   ) {
+    // Say which side disagrees. The rule alone left the reader to work out
+    // whether the metadata field or the taxonomy selection was at fault.
+    const selected = formats.map((term) => term.slug.replaceAll("-", "_"));
     throw new DecisionRepositoryError(
       "INCOMPLETE",
-      "The reviewed Format must match exactly one selected active Format term.",
+      formats.length === 0
+        ? `Format is reviewed as "${format}" but no Format term is selected. Select the matching Format in the review workspace taxonomy.`
+        : formats.length > 1
+          ? `Format is reviewed as "${format}" but ${formats.length} Format terms are selected (${selected.join(", ")}). Keep exactly one.`
+          : `Format is reviewed as "${format}" but the selected Format term is "${selected[0]}". Make them match.`,
     );
   }
   if (!packet.terms.some((term) => term.category === "use_case")) {
