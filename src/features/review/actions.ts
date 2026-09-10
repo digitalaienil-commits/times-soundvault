@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import { requirePermission } from "@/lib/auth/current-user";
 import {
+  acceptAllAiSuggestions,
   addReviewNote,
   assignReview,
   completeReview,
@@ -81,6 +82,35 @@ export async function saveReviewFieldAction(
     });
     revalidatePath(`/review/${submissionId}`);
     return { error: null, saved: true };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function acceptAllAiSuggestionsAction(
+  _state: ReviewActionState,
+  formData: FormData,
+): Promise<ReviewActionState> {
+  try {
+    const user = await requirePermission(
+      "submission.metadataReview",
+      "/review",
+    );
+    const submissionId = z.uuid().parse(text(formData, "submissionId"));
+    const reviewCaseId = z.uuid().parse(text(formData, "reviewCaseId"));
+    const result = await acceptAllAiSuggestions({
+      submissionId,
+      reviewCaseId,
+      actor: user,
+    });
+    revalidatePath(`/review/${submissionId}`);
+    return {
+      error:
+        result.applied === 0
+          ? "No AI suggestion could be applied to these fields."
+          : null,
+      saved: result.applied > 0,
+    };
   } catch (error) {
     return actionError(error);
   }

@@ -8,6 +8,7 @@ import type {
   ReviewFieldName,
   ReviewQueueFilters,
 } from "@/types/review";
+import { REVIEW_FIELD_NAMES } from "@/types/review";
 
 import {
   appendReviewNote,
@@ -156,6 +157,68 @@ export async function saveReviewField(input: {
       reviewedAt: new Date().toISOString(),
     },
   });
+}
+
+export interface AcceptAllAiSuggestionsResult {
+  applied: number;
+  skipped: number;
+}
+
+/**
+ * Accepts every AI suggestion that is valid for its field in one action.
+ *
+ * Reviewing a Track meant confirming each field individually, which is a lot
+ * of identical clicks before any real judgement happens. Provenance is
+ * unchanged: each field is still recorded as AI-sourced and reviewed, exactly
+ * as if it had been accepted one at a time. Fields already carrying a
+ * Coordinator decision are never overwritten, and a suggestion that fails its
+ * field rules is skipped rather than failing the whole batch.
+ */
+export async function acceptAllAiSuggestions(input: {
+  submissionId: string;
+  reviewCaseId: string;
+  actor: CurrentUser;
+}): Promise<AcceptAllAiSuggestionsResult> {
+  let applied = 0;
+  let skipped = 0;
+
+  for (const fieldName of REVIEW_FIELD_NAMES) {
+    const aggregate = await loadReviewAggregate(
+      getDatabase(),
+      input.submissionId,
+      input.actor,
+    );
+    if (!aggregate || aggregate.reviewCase?.id !== input.reviewCaseId) {
+      throw new ReviewRepositoryError("NOT_FOUND", "Review was not found.");
+    }
+    if (!aggregate.editable) {
+      throw new ReviewRepositoryError(
+        "READ_ONLY",
+        "This review can no longer be edited.",
+      );
+    }
+    // A Coordinator's own decision outranks a suggestion.
+    if (aggregate.draft[fieldName]?.sourceKind === "coordinator") {
+      skipped += 1;
+      continue;
+    }
+    try {
+      await saveReviewField({
+        reviewCaseId: input.reviewCaseId,
+        submissionId: input.submissionId,
+        fieldName,
+        sourceKind: "ai",
+        rowVersion: aggregate.reviewCase.rowVersion,
+        actor: input.actor,
+      });
+      applied += 1;
+    } catch {
+      // No suggestion for this field, or one that its rules reject.
+      skipped += 1;
+    }
+  }
+
+  return { applied, skipped };
 }
 
 export const updateReviewChecklist = (

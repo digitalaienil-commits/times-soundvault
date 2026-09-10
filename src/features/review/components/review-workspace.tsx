@@ -6,6 +6,7 @@ import type { ReviewAggregate, ReviewFieldName } from "@/types/review";
 import { REVIEW_FIELD_NAMES } from "@/types/review";
 
 import {
+  acceptAllAiSuggestionsAction,
   addReviewNoteAction,
   markReadyAction,
   reassignReviewAction,
@@ -128,6 +129,124 @@ function HiddenCase({ aggregate }: { aggregate: ReviewAggregate }) {
   );
 }
 
+/**
+ * How each field should be entered.
+ *
+ * Every field used to render as a bare text box, so a 0-1 score and a free
+ * text caption looked identical and a wrong entry only produced "Invalid
+ * input". Describing the field in the control itself prevents most of those
+ * errors before they happen.
+ */
+const FIELD_INPUTS: Record<
+  ReviewFieldName,
+  | { kind: "text"; placeholder?: string; hint?: string }
+  | { kind: "number"; min: number; max: number; step: number; hint: string }
+  | { kind: "select"; options: readonly string[]; hint?: string }
+> = {
+  title: { kind: "text", placeholder: "Track title" },
+  description: { kind: "text", placeholder: "Short description" },
+  bpm: { kind: "number", min: 1, max: 400, step: 0.01, hint: "1 to 400" },
+  keyTonic: { kind: "text", placeholder: "C, F#, Bb" },
+  keyMode: { kind: "text", placeholder: "major or minor" },
+  timeSignature: { kind: "text", placeholder: "4/4", hint: "Format: 4/4" },
+  energyScore: { kind: "number", min: 0, max: 1, step: 0.01, hint: "0 to 1" },
+  valence: { kind: "number", min: 0, max: 1, step: 0.01, hint: "0 to 1" },
+  arousal: { kind: "number", min: 0, max: 1, step: 0.01, hint: "0 to 1" },
+  vocalState: {
+    kind: "select",
+    options: ["unknown", "instrumental", "vocal", "mixed"],
+  },
+  languageCode: { kind: "text", placeholder: "en", hint: "en or en-IN" },
+  era: { kind: "text", placeholder: "Contemporary" },
+  descriptionCaption: { kind: "text", placeholder: "One-line caption" },
+  format: {
+    kind: "select",
+    options: [
+      "background_bed",
+      "stinger",
+      "bumper",
+      "intro",
+      "outro",
+      "transition",
+      "theme",
+      "full_track",
+    ],
+  },
+  underDialogue: { kind: "select", options: ["yes", "no", "unknown"] },
+  loopable: { kind: "select", options: ["yes", "no", "unknown"] },
+  endingType: {
+    kind: "select",
+    options: ["clean_stop", "final_hit", "fade", "open", "unknown"],
+  },
+};
+
+function CoordinatorValueInput({
+  field,
+  defaultValue,
+}: {
+  field: ReviewFieldName;
+  defaultValue: string;
+}) {
+  const input = FIELD_INPUTS[field];
+  const className =
+    "mt-1.5 h-9 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground";
+
+  if (input.kind === "select") {
+    return (
+      <>
+        <select
+          name="customValue"
+          defaultValue={defaultValue}
+          className={className}
+        >
+          <option value="">Not set</option>
+          {input.options.map((option) => (
+            <option key={option} value={option}>
+              {option.replaceAll("_", " ")}
+            </option>
+          ))}
+        </select>
+      </>
+    );
+  }
+
+  if (input.kind === "number") {
+    return (
+      <>
+        <input
+          name="customValue"
+          type="number"
+          inputMode="decimal"
+          min={input.min}
+          max={input.max}
+          step={input.step}
+          defaultValue={defaultValue}
+          className={className}
+        />
+        <span className="mt-1 block text-xs font-normal text-muted-foreground">
+          {input.hint}
+        </span>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <input
+        name="customValue"
+        placeholder={input.placeholder}
+        defaultValue={defaultValue}
+        className={className}
+      />
+      {input.hint ? (
+        <span className="mt-1 block text-xs font-normal text-muted-foreground">
+          {input.hint}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
 function MetadataReview({ aggregate }: { aggregate: ReviewAggregate }) {
   const review = aggregate.reviewCase;
   return (
@@ -158,6 +277,25 @@ function MetadataReview({ aggregate }: { aggregate: ReviewAggregate }) {
         <p className="mt-3 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
           AI analysis skipped — duration not supported
         </p>
+      ) : null}
+      {aggregate.editable && review && aggregate.aiStatus === "complete" ? (
+        <ReviewActionForm
+          action={acceptAllAiSuggestionsAction}
+          label="Accept all AI suggestions"
+          variant="outline"
+          className="mt-4"
+        >
+          <input type="hidden" name="reviewCaseId" value={review.id} />
+          <input
+            type="hidden"
+            name="submissionId"
+            value={aggregate.submissionId}
+          />
+          <p className="text-sm text-muted-foreground">
+            Applies every valid suggestion at once and records each as
+            AI-sourced. Fields you have already decided are left alone.
+          </p>
+        </ReviewActionForm>
       ) : null}
       <div className="mt-6 space-y-4">
         {REVIEW_FIELD_NAMES.map((field) => {
@@ -236,14 +374,13 @@ function MetadataReview({ aggregate }: { aggregate: ReviewAggregate }) {
                     </label>
                     <label className="text-xs font-medium text-muted-foreground">
                       Coordinator value
-                      <input
-                        name="customValue"
+                      <CoordinatorValueInput
+                        field={field}
                         defaultValue={
                           draft?.sourceKind === "coordinator"
                             ? String(draft.value ?? "")
                             : ""
                         }
-                        className="mt-1.5 h-9 w-full rounded-lg border border-input bg-surface px-3 text-sm text-foreground"
                       />
                     </label>
                   </div>
