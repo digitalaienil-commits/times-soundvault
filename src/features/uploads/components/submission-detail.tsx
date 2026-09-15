@@ -1,8 +1,8 @@
 import type { RightsDeclarationDto } from "@/types/domain/rights";
 import type { UploadWorkspaceSubmission } from "@/types/uploads";
 
-import { formatBytes } from "./batch-summary";
 import { SubmissionActions } from "./submission-actions";
+import { SubmissionAudioFiles } from "./submission-audio-files";
 
 interface EventItem {
   id: string;
@@ -38,36 +38,10 @@ export function UploadSubmissionDetail({
               Revision {submission.revisionNumber}
             </span>
           </div>
-          <ul className="mt-4 divide-y divide-border border-y border-border">
-            {submission.files.map((file) => (
-              <li
-                key={file.audioFileId}
-                className="grid gap-2 py-4 sm:grid-cols-[minmax(0,1fr)_10rem_10rem]"
-              >
-                <div>
-                  <p className="font-medium break-all">
-                    {file.originalFilename}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {file.role === "master"
-                      ? "Master"
-                      : `${file.stemType?.replaceAll("_", " ")}${file.stemLabel ? ` — ${file.stemLabel}` : ""}`}
-                  </p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {file.containerFormat?.toUpperCase() ??
-                    "Pending verification"}
-                  <br />
-                  {formatBytes(file.byteSize)}
-                </p>
-                <p className="text-sm font-medium">
-                  {file.uploadStatus === "completed"
-                    ? "Files received"
-                    : file.uploadStatus.replaceAll("_", " ")}
-                </p>
-              </li>
-            ))}
-          </ul>
+          <SubmissionAudioFiles
+            submissionId={submission.id}
+            files={submission.files}
+          />
         </section>
         <section
           aria-labelledby="metadata-title"
