@@ -65,9 +65,21 @@ addresses the drive directly.
 
 The app registration needs an **application** permission for Microsoft Graph
 with tenant admin consent granted — `Files.ReadWrite.All`, or `Sites.Selected`
-plus a write grant on the specific site, which is the tighter option. Without
-consent, token acquisition succeeds and every Graph call then fails with 403,
-so verify before relying on it.
+plus a write grant on the specific site, which is the tighter option. Delegated
+permissions do not apply: uploads and both operator scripts run as the
+application, with no signed-in user.
+
+An app registration with no permissions at all is still issued a valid token,
+so the credentials look correct and every call fails with `401 General
+exception while processing` — a message that names neither the cause nor the
+fix. Both scripts therefore read the granted permissions out of the token and
+report them at sign-in, and on an authorization failure with nothing granted
+they print what the administrator has to do. Getting a token is not evidence of
+access.
+
+Under `Sites.Selected` the app can see only the site it was granted, so
+`storage:discover --search` returns nothing useful; address the site directly
+with `--site`. `--search` needs `Sites.Read.All`.
 
 Run `pnpm storage:verify` to validate configuration. `storage:verify` acquires an application token, reads the drive and reads the
 root folder, so a wrong secret, missing admin consent or unreachable drive

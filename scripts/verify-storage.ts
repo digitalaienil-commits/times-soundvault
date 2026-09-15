@@ -1,33 +1,15 @@
 import { mkdir, stat } from "node:fs/promises";
 
 import { loadEnvConfig } from "@next/env";
-import { ClientSecretCredential } from "@azure/identity";
 
 import { parseStorageConfig } from "../src/lib/storage/config";
+import {
+  acquireGraphApplication,
+  describeGrantedPermissions,
+  graph,
+} from "./graph-app-client";
 
 loadEnvConfig(process.cwd());
-
-const GRAPH = "https://graph.microsoft.com/v1.0";
-const SCOPE = "https://graph.microsoft.com/.default";
-
-async function graph<T>(path: string, token: string): Promise<T> {
-  const response = await fetch(`${GRAPH}${path}`, {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    let detail = body.slice(0, 300);
-    try {
-      detail =
-        (JSON.parse(body) as { error?: { message?: string } }).error?.message ??
-        detail;
-    } catch {
-      // Graph does not always return JSON on failure.
-    }
-    throw new Error(`Graph ${response.status}: ${detail}`);
-  }
-  return (await response.json()) as T;
-}
 
 async function main() {
   const config = parseStorageConfig();
@@ -50,19 +32,13 @@ async function main() {
     return;
   }
 
-  const token = (
-    await new ClientSecretCredential(
-      oneDrive.tenantId,
-      oneDrive.clientId,
-      oneDrive.clientSecret,
-    ).getToken(SCOPE)
-  )?.token;
-  if (!token) throw new Error("Microsoft Graph token acquisition failed");
-  console.log("Application token acquired.");
+  const app = await acquireGraphApplication(oneDrive);
+  console.log(`Application token acquired for "${app.displayName}".`);
+  console.log(describeGrantedPermissions(app));
 
   const drive = await graph<{ id: string; name: string; driveType: string }>(
+    app,
     `/drives/${encodeURIComponent(oneDrive.driveId)}`,
-    token,
   );
   console.log(`Drive reachable: "${drive.name}" (${drive.driveType}).`);
 
@@ -71,10 +47,10 @@ async function main() {
     name: string;
     folder?: { childCount: number };
   }>(
+    app,
     `/drives/${encodeURIComponent(oneDrive.driveId)}/items/${encodeURIComponent(
       oneDrive.rootItemId,
     )}`,
-    token,
   );
   if (!root.folder) {
     throw new Error(

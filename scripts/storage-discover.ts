@@ -1,5 +1,10 @@
 import { loadEnvConfig } from "@next/env";
-import { ClientSecretCredential } from "@azure/identity";
+
+import {
+  acquireGraphApplication,
+  describeGrantedPermissions,
+  graph,
+} from "./graph-app-client";
 
 loadEnvConfig(process.cwd());
 
@@ -13,9 +18,6 @@ loadEnvConfig(process.cwd());
  *
  * It never writes anything and never prints a secret.
  */
-const GRAPH = "https://graph.microsoft.com/v1.0";
-const SCOPE = "https://graph.microsoft.com/.default";
-
 function required(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -40,6 +42,9 @@ function usage(): never {
       "",
       "--folder resolves a folder inside the document library and prints its item id.",
       "Without it, the drive root is reported instead.",
+      "",
+      "--search needs Sites.Read.All. Under the tighter Sites.Selected grant only",
+      "--site works, because the app can see just the site it was given.",
     ].join("\n"),
   );
   process.exit(2);
@@ -48,25 +53,6 @@ function usage(): never {
 function argument(flag: string): string | undefined {
   const index = process.argv.indexOf(flag);
   return index === -1 ? undefined : process.argv[index + 1];
-}
-
-async function graph<T>(path: string, token: string): Promise<T> {
-  const response = await fetch(`${GRAPH}${path}`, {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    const body = await response.text();
-    let detail = body.slice(0, 400);
-    try {
-      detail =
-        (JSON.parse(body) as { error?: { message?: string } }).error?.message ??
-        detail;
-    } catch {
-      // Keep the raw body when Graph does not return JSON.
-    }
-    throw new Error(`Graph ${response.status} on ${path}: ${detail}`);
-  }
-  return (await response.json()) as T;
 }
 
 async function main() {
@@ -79,19 +65,18 @@ async function main() {
   const folder = argument("--folder");
   if (!site && !search) usage();
 
-  const credential = new ClientSecretCredential(
+  const app = await acquireGraphApplication({
     tenantId,
     clientId,
     clientSecret,
-  );
-  const token = (await credential.getToken(SCOPE))?.token;
-  if (!token) throw new Error("Microsoft Graph token acquisition failed");
-  console.log("Authenticated to Microsoft Graph as the application.\n");
+  });
+  console.log(`Authenticated to Microsoft Graph as "${app.displayName}".`);
+  console.log(`${describeGrantedPermissions(app)}\n`);
 
   if (search) {
     const results = await graph<{
       value: { id: string; displayName: string; webUrl: string }[];
-    }>(`/sites?search=${encodeURIComponent(search)}`, token);
+    }>(app, `/sites?search=${encodeURIComponent(search)}`);
     if (results.value.length === 0) {
       console.log(`No site matched "${search}".`);
       return;
@@ -112,14 +97,14 @@ async function main() {
     id: string;
     displayName: string;
     webUrl: string;
-  }>(`/sites/${site}`, token);
+  }>(app, `/sites/${site}`);
   console.log(`Site: ${resolved.displayName}`);
   console.log(`  webUrl: ${resolved.webUrl}`);
   console.log(`  ONEDRIVE_SITE_ID=${resolved.id}\n`);
 
   const drives = await graph<{
     value: { id: string; name: string; driveType: string; webUrl: string }[];
-  }>(`/sites/${resolved.id}/drives`, token);
+  }>(app, `/sites/${resolved.id}/drives`);
 
   console.log("Document libraries on this site:");
   for (const drive of drives.value) {
@@ -131,7 +116,7 @@ async function main() {
       ? `/drives/${drive.id}/root:/${encodeURIComponent(folder)}`
       : `/drives/${drive.id}/root`;
     try {
-      const item = await graph<{ id: string; name: string }>(rootPath, token);
+      const item = await graph<{ id: string; name: string }>(app, rootPath);
       console.log(
         `    ONEDRIVE_ROOT_ITEM_ID=${item.id}   (folder "${item.name}")`,
       );
