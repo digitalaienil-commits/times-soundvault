@@ -40,8 +40,42 @@ requests. Resumable upload URLs are bearer capabilities: they are encrypted at
 rest, never logged or returned in DTOs, and upload PUTs intentionally omit the
 Graph `Authorization` header.
 
-Run `pnpm storage:verify` to validate configuration. CI uses local storage and
-mocked OneDrive HTTP tests; it never calls Microsoft Graph. A live readiness
+## Finding the SharePoint identifiers
+
+An Azure app registration gives you the tenant, client and secret. It does not
+tell you which document library the app should own, and those identifiers are
+opaque. After pasting the three app-registration values, run:
+
+```bash
+pnpm storage:discover -- --search soundvault
+pnpm storage:discover -- --site contoso.sharepoint.com:/sites/SoundVault
+pnpm storage:discover -- --site contoso.sharepoint.com:/sites/SoundVault --folder SoundVault
+```
+
+The first form finds candidate sites, the second lists the document libraries
+on one site, and `--folder` resolves a folder inside a library so uploads land
+somewhere dedicated rather than at the library root. Each form prints the
+`ONEDRIVE_*` values ready to paste. It reads only, writes nothing, and never
+prints a secret.
+
+`ONEDRIVE_SITE_ID` is recorded for operators; every Graph call the adapter makes
+addresses the drive directly.
+
+## Required Graph permission
+
+The app registration needs an **application** permission for Microsoft Graph
+with tenant admin consent granted — `Files.ReadWrite.All`, or `Sites.Selected`
+plus a write grant on the specific site, which is the tighter option. Without
+consent, token acquisition succeeds and every Graph call then fails with 403,
+so verify before relying on it.
+
+Run `pnpm storage:verify` to validate configuration. `storage:verify` acquires an application token, reads the drive and reads the
+root folder, so a wrong secret, missing admin consent or unreachable drive
+fails loudly instead of at the first upload. It creates nothing; write access
+is proven only by a real upload. Pass `--offline` to check shape alone.
+
+CI uses local storage and mocked OneDrive HTTP tests; it never calls Microsoft
+Graph. A live readiness
 check requires approved organization credentials, an explicit disposable test
 file, verification in the configured drive/root, and cleanup confirmation.
 

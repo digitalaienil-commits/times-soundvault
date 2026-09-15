@@ -16,6 +16,7 @@
     "domain:migrate": "tsx scripts/migrate-domain.ts",
     "domain:status": "tsx scripts/domain-status.ts",
     "storage:verify": "node --conditions=react-server --import tsx scripts/verify-storage.ts",
+    "storage:discover": "node --conditions=react-server --import tsx scripts/storage-discover.ts",
     "uploads:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-uploads.ts",
     "data:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-runtime-data.ts",
     "workers": "tsx scripts/workers.ts",

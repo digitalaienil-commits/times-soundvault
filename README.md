@@ -125,7 +125,8 @@ pnpm db:logs         # follow PostgreSQL logs
 pnpm db:reset        # guarded local-only reset; requires confirmation
 pnpm domain:migrate  # apply checksummed catalog/workflow/rights migrations
 pnpm domain:status   # report applied, pending or changed domain migrations
-pnpm storage:verify  # validate private local or OneDrive configuration
+pnpm storage:verify  # validate storage; for OneDrive it calls Graph read-only
+pnpm storage:discover # find SharePoint site, drive and root folder ids
 pnpm uploads:cleanup # dry-run expired/cancelled draft cleanup
 pnpm data:cleanup    # dry-run local runtime data cleanup; --confirm to apply
 pnpm workers          # run processing, media and embedding workers together
