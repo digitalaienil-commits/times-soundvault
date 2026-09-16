@@ -32,6 +32,35 @@ SoundVault
 - In dry-run mode (`YOUTUBE_CONTENT_ID_DRY_RUN=true`), safe offline simulation runs without network calls or billing.
 - In live mode (`YOUTUBE_CONTENT_ID_DRY_RUN=false`), server-side OAuth2 credentials (`YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET`, `YOUTUBE_REFRESH_TOKEN`, `YOUTUBE_CONTENT_OWNER_ID`) are used to scan private test uploads and query partner claims.
 
+## Obtaining the refresh token
+
+Google issues a refresh token only through an interactive consent, so it cannot
+come from a config file:
+
+```bash
+pnpm youtube:authorize          # read-only scope, enough to prove the client
+pnpm youtube:authorize -- --full  # also requests upload + youtubepartner
+```
+
+It runs a throwaway callback server on port 4545 (the dev server holds 3000),
+prints a Google URL, and on return prints `YOUTUBE_REFRESH_TOKEN` and the
+channel the token can act on. Register
+`http://localhost:4545/oauth2callback` as an authorized redirect URI on the
+OAuth client first, or Google refuses the request. The script writes nothing:
+paste the token into `.env.local` by hand.
+
+`pnpm youtube:verify` re-proves stored credentials against the live API at any
+time without another consent screen, and reports whether the `youtubepartner`
+scope was granted.
+
+**What this proves and what it does not.** A successful authorization proves
+the client id, the client secret, the consent and YouTube Data API access. It
+proves nothing about Content ID, which is a separate partner-level capability
+on a content owner. Until a real CMS operation succeeds against
+`YOUTUBE_CONTENT_OWNER_ID` — followed by cleanup of whatever it created —
+`COPYRIGHT_PROVIDER` stays `manual_youtube` and `YOUTUBE_CONTENT_ID_DRY_RUN`
+stays `true`.
+
 No claim observed means: “No Content ID claim was observed on this test upload.
 This does not prove copyright ownership or guarantee that future claims will
 not appear.” It is never described as copyright clearance.
