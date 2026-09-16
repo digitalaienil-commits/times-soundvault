@@ -86,6 +86,28 @@ root folder, so a wrong secret, missing admin consent or unreachable drive
 fails loudly instead of at the first upload. It creates nothing; write access
 is proven only by a real upload. Pass `--offline` to check shape alone.
 
+## Moving existing objects after a switch
+
+Changing `STORAGE_PROVIDER` decides where new objects are written and nothing
+about where existing ones are. Every audio row records its own
+`storage_backend` and the application reads both, so a switch never strands a
+file. Consolidating the catalogue onto one provider is separate housekeeping:
+
+```bash
+pnpm storage:migrate            # dry run: reports what would move
+pnpm storage:migrate -- --apply
+```
+
+Each object is copied, read back off the new provider and hashed against the
+original before its row is repointed; a successful upload call is not evidence
+that what landed is what left. Rows are updated one transaction per object, so
+an interrupted run leaves a consistent mix rather than a broken one, and
+re-running resumes.
+
+Local copies are never deleted. Reversing a bad migration has to stay possible,
+and reclaiming the disk is a deliberate separate act once the catalogue has
+been checked.
+
 CI uses local storage and mocked OneDrive HTTP tests; it never calls Microsoft
 Graph. A live readiness
 check requires approved organization credentials, an explicit disposable test
