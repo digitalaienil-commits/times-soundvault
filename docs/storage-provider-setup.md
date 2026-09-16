@@ -86,6 +86,29 @@ root folder, so a wrong secret, missing admin consent or unreachable drive
 fails loudly instead of at the first upload. It creates nothing; write access
 is proven only by a real upload. Pass `--offline` to check shape alone.
 
+## Reading the library without the application
+
+Storage keys are generated UUIDs so a producer's filename can never become a
+path, which leaves the document library showing nothing but identifiers. The
+Track name, part, revision, producer and original filename are therefore
+written to the file's SharePoint `Title` and description columns, beside the
+file and never part of the key.
+
+New uploads are labelled as they complete, and the attempt cannot fail the
+upload: an object that reached storage intact has succeeded, and a missing
+label is cosmetic. To label everything stored earlier, or to repair labels
+after Tracks are retitled:
+
+```bash
+pnpm storage:describe
+```
+
+It is idempotent — labels are rebuilt from the catalogue on every run.
+
+Add the **Title** column to the library view in SharePoint to see them; the
+built-in columns are used because creating custom ones needs
+`Sites.Manage.All`, which uploads do not require.
+
 ## Moving existing objects after a switch
 
 Changing `STORAGE_PROVIDER` decides where new objects are written and nothing

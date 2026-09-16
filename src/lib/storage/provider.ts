@@ -107,6 +107,16 @@ export interface DeleteGeneratedObjectInput {
   providerItemId?: string | null;
 }
 
+export interface DescribeStoredObjectInput {
+  storageKey: string;
+  providerDriveId?: string | null;
+  providerItemId?: string | null;
+  /** Short human label, e.g. the Track title. */
+  title: string;
+  /** One line of supporting detail: role, revision, producer, filename. */
+  details: string;
+}
+
 export interface StorageProvider {
   readonly kind: StorageKind;
   createUploadSession(
@@ -129,6 +139,17 @@ export interface StorageProvider {
     input: StoreGeneratedObjectInput,
   ): Promise<GeneratedStoredObject>;
   deleteGeneratedObject(input: DeleteGeneratedObjectInput): Promise<void>;
+  /**
+   * Attaches human-readable labels to a stored object, where the backend has
+   * somewhere to put them.
+   *
+   * Object names are generated UUIDs so that a producer's filename can never
+   * become a path, which also means a person browsing the storage sees
+   * nothing but identifiers. SharePoint carries metadata columns alongside
+   * the file, so the catalogue can be legible there without the key ever
+   * depending on user input. Local storage has no equivalent and omits this.
+   */
+  describeStoredObject?(input: DescribeStoredObjectInput): Promise<void>;
 }
 
 export class StorageProviderError extends Error {

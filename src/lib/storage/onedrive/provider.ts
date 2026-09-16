@@ -9,6 +9,7 @@ import { pipeline } from "node:stream/promises";
 
 import { assertAudioSignature } from "../signature";
 import type {
+  DescribeStoredObjectInput,
   CreateStorageUploadInput,
   DeleteDraftObjectInput,
   DeleteGeneratedObjectInput,
@@ -419,6 +420,49 @@ export class OneDriveStorageProvider implements StorageProvider {
       contentLength: input.end - input.start + 1,
       abort: () => controller.abort(),
     };
+  }
+
+  /**
+   * Writes the Track's name onto the stored file's SharePoint metadata.
+   *
+   * The object name is a UUID so a producer's filename can never become a
+   * path, which leaves anyone browsing the library looking at identifiers.
+   * These are list columns beside the file, never part of the key, so the
+   * library reads like a catalogue while the path stays generated.
+   *
+   * Creating custom columns needs `Sites.Manage.All`; these are the built-in
+   * `Title` and description fields, writable under the upload permission the
+   * app already holds.
+   */
+  async describeStoredObject(input: DescribeStoredObjectInput): Promise<void> {
+    const driveId = input.providerDriveId ?? this.config.driveId;
+    const itemId = input.providerItemId;
+    if (!itemId) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        "Describing a stored object requires its provider item id",
+      );
+    }
+    const response = await this.request(
+      `https://graph.microsoft.com/v1.0/drives/${encodeURIComponent(driveId)}/items/${encodeURIComponent(itemId)}/listItem/fields`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: await this.authorizationHeader(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          Title: input.title,
+          _ExtendedDescription: input.details,
+        }),
+      },
+    );
+    if (!response.ok) {
+      throw new StorageProviderError(
+        "PROVIDER_FAILURE",
+        `Failed to describe stored object (${response.status})`,
+      );
+    }
   }
 
   async storeGeneratedObject(
