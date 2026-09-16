@@ -86,6 +86,25 @@ export function parseStorageConfig(
     concurrency: Math.min(parsed.UPLOAD_CONCURRENCY, 3),
     advisoryMaxDurationSeconds: parsed.UPLOAD_ADVISORY_MAX_DURATION_SECONDS,
   };
+  // `storage_backend` is recorded per file, so a server whose configured
+  // provider is `local` still has to read objects written to OneDrive before
+  // the switch, and vice versa. The credentials are therefore accepted
+  // whenever they are complete, and only *required* when OneDrive is the
+  // provider that new writes go to.
+  const oneDriveValues = {
+    tenantId: parsed.ONEDRIVE_TENANT_ID,
+    clientId: parsed.ONEDRIVE_CLIENT_ID,
+    clientSecret: parsed.ONEDRIVE_CLIENT_SECRET,
+    siteId: parsed.ONEDRIVE_SITE_ID,
+    driveId: parsed.ONEDRIVE_DRIVE_ID,
+    rootItemId: parsed.ONEDRIVE_ROOT_ITEM_ID,
+  };
+  if (
+    parsed.STORAGE_PROVIDER !== "onedrive" &&
+    Object.values(oneDriveValues).every((value) => value)
+  ) {
+    config.oneDrive = oneDriveValues as NonNullable<StorageConfig["oneDrive"]>;
+  }
   if (parsed.STORAGE_PROVIDER === "onedrive") {
     const encryptionKey = parsed.STORAGE_SESSION_ENCRYPTION_KEY;
     if (!encryptionKey || Buffer.from(encryptionKey, "base64").length !== 32) {

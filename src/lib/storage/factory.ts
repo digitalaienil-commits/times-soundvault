@@ -14,14 +14,24 @@ export function createStorageProvider(): StorageProvider {
   return new OneDriveStorageProvider(config.oneDrive);
 }
 
+/**
+ * Builds a provider for the backend a stored object actually lives on.
+ *
+ * Every audio row records its own `storage_backend`, because switching
+ * `STORAGE_PROVIDER` changes where new writes go and nothing about where old
+ * objects are. This used to return the configured provider and throw when the
+ * kinds disagreed, which meant the moment the switch was flipped every file
+ * written before it stopped being readable. Read the backend the row names.
+ */
 export function createStorageProviderForKind(
   kind: "local" | "onedrive",
 ): StorageProvider {
-  const provider = createStorageProvider();
-  if (provider.kind !== kind) {
+  const config = parseStorageConfig();
+  if (kind === "local") return new LocalStorageProvider(config.localRoot);
+  if (!config.oneDrive) {
     throw new Error(
-      `Storage provider ${kind} is not configured on this server`,
+      "This object is stored in OneDrive, but OneDrive credentials are not configured on this server",
     );
   }
-  return provider;
+  return new OneDriveStorageProvider(config.oneDrive);
 }
