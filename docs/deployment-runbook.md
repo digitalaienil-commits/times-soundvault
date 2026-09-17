@@ -107,6 +107,77 @@ For local development `pnpm workers` runs the processing, media and embedding
 workers in one terminal. It refuses to run under `NODE_ENV=production`, where
 each worker belongs in its own supervised process.
 
+## 7a. Deploying the web application to Vercel
+
+Vercel runs the Next.js application. It does **not** run the workers: they are
+long-lived processes that spawn `ffmpeg`, and neither fits a serverless
+function. A Vercel deployment therefore needs a second host for the queues, or
+uploads are stored and never analysed.
+
+### What runs where
+
+| Part                                               | Vercel | Elsewhere                       |
+| -------------------------------------------------- | ------ | ------------------------------- |
+| Pages, API routes, auth, review, publication       | yes    |                                 |
+| processing / media / copyright / embedding workers | no     | a VM or container with `ffmpeg` |
+| PostgreSQL 17 + `pg_trgm` + `vector`               | no     | managed Postgres                |
+| Audio objects                                      | no     | SharePoint document library     |
+
+### Before the first deploy
+
+```bash
+pnpm deploy:check
+```
+
+It parses every configuration file as production against the variables in the
+current environment, so a missing secret or a forbidden local-auth setting is
+reported before a build rather than as a 500 on a live URL. It contacts nothing
+and prints no secret.
+
+### Settings
+
+- **Project settings → Environment Variables**: every server variable from
+  `.env.example`. None may use `NEXT_PUBLIC_`.
+- `STORAGE_PROVIDER=onedrive` is required. Local storage writes to the function
+  filesystem, which is discarded between invocations, so uploaded audio would
+  disappear.
+- `DATABASE_URL` must be a **pooled** connection string. Each warm instance
+  opens its own pool, and instances multiply under load; the pool ceiling drops
+  to 3 on Vercel automatically, but a pooler in front of Postgres is what makes
+  this safe. `DATABASE_POOL_MAX` overrides the ceiling.
+- `BETTER_AUTH_URL` and `AUTH_TRUSTED_ORIGINS` must be the production HTTPS
+  origin. Preview deployments get a different hostname on every build, so
+  authentication will not work on them unless that hostname is added.
+- `vercel.json` pins the region to `bom1` (Mumbai) and raises `maxDuration` for
+  the routes that stream audio. Put the database in the same region; a pool
+  round-trip across continents costs more than the function does.
+
+### The 4.5 MB request limit
+
+Vercel rejects any request body over 4.5 MB. Uploads are chunked, and
+`UPLOAD_CHUNK_BYTES` defaults to 4 MiB so a chunk fits. Raising it above
+4.5 MB on Vercel makes every upload fail on its first chunk with a 413;
+`deploy:check` refuses that combination. A self-hosted deployment behind its
+own proxy can raise it.
+
+A 2 GiB Master is roughly 500 chunk requests at that size. Each one passes
+through a function, which is the cost of not exposing the provider's upload URL
+to the browser.
+
+### Migrations
+
+Migrations are not run by the build. Run them from an operator machine or a
+deploy job that can reach the database directly, before promoting the
+deployment:
+
+```bash
+pnpm auth:migrate
+pnpm domain:migrate
+pnpm domain:status
+```
+
+The extensions must already exist; see section 2.
+
 ## 8. Smoke tests
 
 Run after every deploy, against the production origin:

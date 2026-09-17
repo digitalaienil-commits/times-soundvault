@@ -120,6 +120,7 @@ databaseDescribe("Section 4 PostgreSQL upload workspace", () => {
       localRoot: root,
       maxFileBytes: 2 * 1024 ** 3,
       maxBatchBytes: 20 * 1024 ** 3,
+      chunkBytes: 4 * 1024 * 1024,
       maxTracksPerBatch: 25,
       maxStemsPerTrack: 32,
       concurrency: 3,

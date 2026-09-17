@@ -7,6 +7,7 @@ import { ResumeTransferPanel } from "@/features/uploads/components/resume-transf
 import { UploadSubmissionCollection } from "@/features/uploads/components/upload-submission-collection";
 import { requireRouteFamilyAccess } from "@/lib/auth/current-user";
 import { getUploadBatchSubmissions } from "@/lib/domain/uploads/uploads";
+import { parseStorageConfig, toPublicUploadConfig } from "@/lib/storage/config";
 
 export const metadata: Metadata = { title: "Resume Upload" };
 
@@ -29,7 +30,10 @@ export default async function UploadBatchPage({
         description="Reselect unfinished local files to continue from the last server-confirmed byte. Completed sibling Tracks remain intact."
       />
       <div className="mt-8 space-y-6">
-        <ResumeTransferPanel submissions={submissions} />
+        <ResumeTransferPanel
+          submissions={submissions}
+          config={toPublicUploadConfig(parseStorageConfig())}
+        />
         <UploadSubmissionCollection
           submissions={submissions}
           showOwner={user.role === "admin"}

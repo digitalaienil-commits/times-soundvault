@@ -78,6 +78,8 @@ export interface PublicUploadConfig {
   maxStemsPerTrack: number;
   concurrency: number;
   advisoryMaxDurationSeconds: number;
+  /** Bytes the browser sends per request when transferring a file. */
+  chunkBytes: number;
   storageDisplayLabel: string;
 }
 

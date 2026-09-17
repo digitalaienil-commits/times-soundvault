@@ -1,0 +1,26 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm build",
+  "regions": ["bom1"],
+  "functions": {
+    "src/app/api/submissions/[submissionId]/audio/[audioFileId]/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/review/audio/[audioFileId]/route.ts": { "maxDuration": 300 },
+    "src/app/api/library/tracks/[trackId]/audio/[audioAssetId]/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/library/tracks/[trackId]/downloads/[audioAssetId]/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/library/packages/[packageId]/download/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/copyright/batches/[batchId]/download/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/uploads/[sessionId]/chunk/route.ts": { "maxDuration": 300 }
+  }
+}

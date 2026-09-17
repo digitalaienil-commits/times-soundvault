@@ -20,6 +20,11 @@ const uploadEnvironmentSchema = z.object({
   UPLOAD_MAX_STEMS_PER_TRACK: positiveInteger(32),
   UPLOAD_CONCURRENCY: positiveInteger(3),
   UPLOAD_ADVISORY_MAX_DURATION_SECONDS: positiveInteger(1800),
+  // Serverless platforms cap the request body: Vercel rejects anything over
+  // 4.5 MB, and a larger chunk fails the whole transfer with a 413 that looks
+  // like a broken upload. The default fits inside that; a self-hosted server
+  // with no such limit can raise it.
+  UPLOAD_CHUNK_BYTES: positiveInteger(4 * 1024 * 1024),
   ONEDRIVE_TENANT_ID: z.string().trim().optional(),
   ONEDRIVE_CLIENT_ID: z.string().trim().optional(),
   ONEDRIVE_CLIENT_SECRET: z.string().trim().optional(),
@@ -38,6 +43,7 @@ export interface StorageConfig {
   maxStemsPerTrack: number;
   concurrency: number;
   advisoryMaxDurationSeconds: number;
+  chunkBytes: number;
   oneDrive?: {
     tenantId: string;
     clientId: string;
@@ -85,6 +91,10 @@ export function parseStorageConfig(
     maxStemsPerTrack: parsed.UPLOAD_MAX_STEMS_PER_TRACK,
     concurrency: Math.min(parsed.UPLOAD_CONCURRENCY, 3),
     advisoryMaxDurationSeconds: parsed.UPLOAD_ADVISORY_MAX_DURATION_SECONDS,
+    chunkBytes: Math.min(
+      Math.max(parsed.UPLOAD_CHUNK_BYTES, 256 * 1024),
+      64 * 1024 * 1024,
+    ),
   };
   // `storage_backend` is recorded per file, so a server whose configured
   // provider is `local` still has to read objects written to OneDrive before
@@ -153,6 +163,7 @@ export function toPublicUploadConfig(
     maxStemsPerTrack: config.maxStemsPerTrack,
     concurrency: config.concurrency,
     advisoryMaxDurationSeconds: config.advisoryMaxDurationSeconds,
+    chunkBytes: config.chunkBytes,
     storageDisplayLabel:
       config.provider === "onedrive"
         ? "Company SharePoint"

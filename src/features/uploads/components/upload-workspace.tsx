@@ -438,7 +438,9 @@ export function UploadWorkspace({
           );
           return;
         }
-        const chunkSize = 10 * 1024 * 1024;
+        // Server-configured: a serverless host rejects a body above its own
+        // limit, and the whole transfer fails on the first chunk.
+        const chunkSize = config.chunkBytes;
         while (offset < item.file.size) {
           const current = files.find((file) => file.clientId === clientId);
           if (current?.status === "paused" || controller.signal.aborted) return;
@@ -513,7 +515,7 @@ export function UploadWorkspace({
         abortControllers.current.delete(clientId);
       }
     },
-    [files, online],
+    [files, online, config.chunkBytes],
   );
 
   const startUpload = async () => {

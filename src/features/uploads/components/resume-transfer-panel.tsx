@@ -4,7 +4,10 @@ import { useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { UploadWorkspaceSubmission } from "@/types/uploads";
+import type {
+  PublicUploadConfig,
+  UploadWorkspaceSubmission,
+} from "@/types/uploads";
 
 import { formatBytes } from "./batch-summary";
 
@@ -27,8 +30,10 @@ async function errorMessage(response: Response): Promise<string> {
 
 export function ResumeTransferPanel({
   submissions,
+  config,
 }: {
   submissions: UploadWorkspaceSubmission[];
+  config: PublicUploadConfig;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [matched, setMatched] = useState<MatchedFile[]>([]);
@@ -86,7 +91,10 @@ export function ResumeTransferPanel({
             }
           ).session.uploadedByteSize;
           while (offset < item.expectedBytes) {
-            const end = Math.min(offset + 10 * 1024 * 1024, item.expectedBytes);
+            const end = Math.min(
+              offset + config.chunkBytes,
+              item.expectedBytes,
+            );
             const response = await fetch(
               `/api/uploads/${item.sessionId}/chunk`,
               {
