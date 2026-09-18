@@ -20,6 +20,7 @@ import {
   completeUploadSession,
   createUploadDraftBatch,
   getUploadSessionAccess,
+  listResumableBatches,
   storageReferenceForSession,
   submitCompletedDraft,
   updateUploadProgress,
@@ -468,6 +469,34 @@ databaseDescribe("Section 4 PostgreSQL upload workspace", () => {
     await expect(
       completeUploadSession(pool, file.session.id, producer, config, provider),
     ).rejects.toMatchObject({ code: "UPLOAD_CANCELLED" });
+  });
+
+  it("stops offering a batch whose remaining uploads can no longer be resumed", async () => {
+    const producer = await insertUser(pool, "music_producer");
+    const bytes = wavBytes();
+    const created = await createUploadDraftBatch(
+      pool,
+      producer,
+      input(bytes.length),
+      config,
+      provider,
+    );
+    const file = created.files[0]!;
+    await expect(listResumableBatches(pool, producer)).resolves.toMatchObject([
+      { id: created.batchId, pendingFiles: 1 },
+    ]);
+
+    // A cancelled session is refused by the chunk route, so a batch left with
+    // nothing but cancelled uploads can never be continued. Counting it as
+    // unfinished pinned it to the resume list for good.
+    await cancelUploadSession(
+      pool,
+      file.session.id,
+      producer,
+      config,
+      provider,
+    );
+    await expect(listResumableBatches(pool, producer)).resolves.toEqual([]);
   });
 
   it("creates and submits immutable Revision N+1 after changes are requested", async () => {

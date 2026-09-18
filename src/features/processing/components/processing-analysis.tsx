@@ -7,6 +7,22 @@ const number = (value: number | null, digits = 1) =>
 const duration = (milliseconds: number) =>
   `${Math.floor(milliseconds / 60000)}:${String(Math.floor(milliseconds / 1000) % 60).padStart(2, "0")}`;
 
+function TagList({ tags }: { tags: string[] }) {
+  if (tags.length === 0) return <>None</>;
+  return (
+    <ul className="mt-1 flex flex-wrap gap-1.5">
+      {tags.map((tag) => (
+        <li
+          key={tag}
+          className="rounded-full border border-border px-2.5 py-0.5 text-xs"
+        >
+          {tag}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function ProcessingAnalysis({
   analysis,
   submissionId,
@@ -148,29 +164,23 @@ export function ProcessingAnalysis({
               </dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-muted-foreground">Search tags</dt>
+              <dt className="text-muted-foreground">Common search tags</dt>
               <dd>
-                {analysis.normalizedAiResult.searchTags.length > 0 ? (
-                  <ul className="mt-1 flex flex-wrap gap-1.5">
-                    {analysis.normalizedAiResult.searchTags.map((tag) => (
-                      <li
-                        key={tag}
-                        className="rounded-full border border-border px-2.5 py-0.5 text-xs"
-                      >
-                        {tag}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  "None"
-                )}
+                <TagList tags={analysis.normalizedAiResult.searchTags} />
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Suggested use cases</dt>
+              <dd>
+                <TagList tags={analysis.normalizedAiResult.useCases} />
               </dd>
             </div>
             <div>
               <dt className="text-muted-foreground">Tempo / key</dt>
               <dd>
                 {analysis.normalizedAiResult.bpm ?? "Unknown"} BPM ·{" "}
-                {analysis.normalizedAiResult.key ?? "Unknown"}
+                {analysis.normalizedAiResult.key ?? "Unknown"} ·{" "}
+                {analysis.normalizedAiResult.timeSignature ?? "Unknown"}
               </dd>
             </div>
             <div>

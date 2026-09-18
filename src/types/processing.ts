@@ -90,8 +90,10 @@ export interface NormalizedAnalysisResult {
   musicalEra: string | null;
   transformerCaption: string | null;
   freeGenreTags: string[];
-  /** Search keywords: what an editor would type to find this track. */
+  /** Descriptive keywords: how an editor would describe the track's feel. */
   searchTags: string[];
+  /** Editorial slots the track suits, drawn from the `use_case` taxonomy. */
+  useCases: string[];
   segmentIntervalSeconds: number | null;
   segments: Array<{
     startSeconds: number;

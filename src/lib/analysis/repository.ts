@@ -36,6 +36,7 @@ const SUGGESTION_FIELDS: Array<keyof NormalizedAnalysisResult> = [
   "transformerCaption",
   "freeGenreTags",
   "searchTags",
+  "useCases",
   "segmentIntervalSeconds",
   "segments",
 ];
@@ -50,6 +51,7 @@ const TERM_FIELD_CATEGORIES: Partial<
   character: "character",
   movement: "movement",
   musicalEra: "era",
+  useCases: "use_case",
 };
 
 function snakeCase(value: string): string {
@@ -118,6 +120,22 @@ async function persistMetadataSuggestions(
   }
 }
 
+/**
+ * Active `use_case` labels, offered to the provider as a closed vocabulary.
+ * The category is the one axis that answers "what is this for", and it is the
+ * only taxonomy an editor browses before they know what the track is called.
+ */
+export async function loadUseCaseVocabulary(
+  database: Queryable,
+): Promise<string[]> {
+  const result = await database.query<{ label: string } & QueryResultRow>(
+    `SELECT label FROM catalog.taxonomy_term
+     WHERE category = 'use_case' AND is_active = true
+     ORDER BY label, id`,
+  );
+  return result.rows.map((row) => row.label);
+}
+
 async function persistKnownTaxonomySuggestions(
   database: Queryable,
   input: {
@@ -132,11 +150,19 @@ async function persistKnownTaxonomySuggestions(
     for (const label of valuesForTaxonomy(input.normalizedResult[field])) {
       const slug = slugify(label);
       if (!slug) continue;
+      // Slug alone only matches a label the model reproduced exactly. An
+      // administrator's aliases exist precisely to catch the other wordings,
+      // so a near miss becomes a suggestion instead of being dropped.
       const term = await database.query<{ id: string } & QueryResultRow>(
-        `SELECT id FROM catalog.taxonomy_term
-         WHERE category = $1 AND slug = $2 AND is_active = true
+        `SELECT term.id FROM catalog.taxonomy_term term
+         LEFT JOIN catalog.taxonomy_term_alias alias ON alias.term_id = term.id
+         WHERE term.category = $1
+           AND term.is_active = true
+           AND (term.slug = $2
+                OR lower(trim(term.label)) = $3
+                OR alias.normalized_alias = $3)
          LIMIT 1`,
-        [category, slug],
+        [category, slug, label.trim().toLowerCase()],
       );
       const termId = term.rows[0]?.id;
       if (!termId) continue;

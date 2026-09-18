@@ -1180,8 +1180,14 @@ export async function listResumableBatches(
       pending_files: string;
     } & QueryResultRow
   >(
+    // Only a session that can actually be continued counts as unfinished.
+    // Anything cancelled, failed or expired is refused by the chunk route, so
+    // counting those offered a Resume that could never succeed and left the
+    // batch on this list permanently.
     `SELECT batch.id, batch.label, batch.updated_at,
-            count(upload.id) FILTER (WHERE upload.status <> 'completed')::text AS pending_files
+            count(upload.id) FILTER (
+              WHERE upload.status IN ('created', 'uploading', 'paused')
+            )::text AS pending_files
      FROM workflow.submission_batch batch
      JOIN workflow.submission submission ON submission.batch_id = batch.id
      JOIN workflow.submission_revision revision ON revision.id = submission.current_revision_id
@@ -1191,6 +1197,9 @@ export async function listResumableBatches(
      WHERE batch.created_by_user_id = $1
        AND submission.status IN ('draft','changes_requested')
      GROUP BY batch.id
+     HAVING count(upload.id) FILTER (
+       WHERE upload.status IN ('created', 'uploading', 'paused')
+     ) > 0
      ORDER BY batch.updated_at DESC`,
     [user.id],
   );

@@ -113,6 +113,7 @@ describe("prompt filename bias", () => {
     measurements: {},
     features: { bpm: 90 },
     fallback: { transformerCaption: "Breaking News Urgent Broadcast is ..." },
+    useCaseVocabulary: [],
   } as never as Parameters<typeof buildPrompt>[0];
 
   it("withholds the title and filename when audio is attached", () => {

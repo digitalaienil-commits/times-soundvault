@@ -99,10 +99,16 @@ export const geminiMetadataSchema = z.object({
   transformerCaption: nullableString,
   freeGenreTags: textArray,
   /**
-   * The words somebody would actually type to find this track. Genre and
-   * mood describe what it is; these describe what it is for.
+   * How somebody would describe this track in passing: "dark", "shining",
+   * "upbeat". Adjectives an editor reaches for before they know the genre.
    */
   searchTags: textArray,
+  /**
+   * The editorial slots the track suits ("weather", "elections"). Answered
+   * against the live `use_case` taxonomy so an accepted suggestion becomes a
+   * term assignment rather than free text nothing can search.
+   */
+  useCases: textArray,
   segmentIntervalSeconds: nullableNumber,
   segments: z
     .array(
@@ -210,6 +216,7 @@ function normalizeMetadata(
       : fallback.transformerCaption,
     freeGenreTags: cleanArray(parsed.freeGenreTags, 10),
     searchTags: cleanArray(parsed.searchTags, 15),
+    useCases: cleanArray(parsed.useCases, 8),
     segmentIntervalSeconds:
       parsed.segmentIntervalSeconds ?? fallback.segmentIntervalSeconds,
     segments: parsed.segments
@@ -299,6 +306,7 @@ export function buildLocalMetadataFallback(input: {
     // Without the model there is nothing to derive these from: local features
     // measure the signal, not what an editor would search for.
     searchTags: [],
+    useCases: [],
     segmentIntervalSeconds: null,
     segments: [],
   };
@@ -326,6 +334,13 @@ export function buildPrompt(input: {
   features: LocalMusicFeatures;
   fallback: NormalizedAnalysisResult;
   hasAudio: boolean;
+  /**
+   * Active `use_case` term labels. An invented use case is free text no query
+   * reaches, so the model chooses from the library's own vocabulary. An empty
+   * list drops the guidance rather than inviting a guess: `useCases` stays in
+   * outputShape, and an unguided field comes back [].
+   */
+  useCaseVocabulary: string[];
 }): string {
   return JSON.stringify(
     {
@@ -344,8 +359,15 @@ export function buildPrompt(input: {
         moods: "Emotional character of the music itself.",
         instruments: "Instruments and sound sources you can actually hear.",
         searchTags:
-          '8 to 15 lowercase keywords an editor would type to find this track: what it is FOR, not what it is. Usage, occasion, setting, energy feel. Prefer "breaking news sting" over "news". Do not repeat genres and moods verbatim.',
+          '6 to 12 short lowercase words describing how the track feels, in the register an editor uses in passing: "dark", "shining", "upbeat", "fast", "sparse", "tense". Plain adjectives, not scene descriptions: "dark" rather than "dark thriller chase sequence". Do not repeat genres and moods verbatim.',
       },
+      ...(input.useCaseVocabulary.length > 0
+        ? {
+            useCaseVocabulary: input.useCaseVocabulary,
+            useCaseGuidance:
+              "Pick every label from useCaseVocabulary this track could score, copied exactly. Judge fit against a real edit: a sparse bed suits many slots, a dense foreground cue suits few. Return [] rather than reaching for a loose fit.",
+          }
+        : {}),
       outputShape: Object.keys(geminiMetadataSchema.shape),
       // With audio attached the title and filename are deliberately withheld.
       // Leaving them in steered the model hard: a file named "...breaking news
@@ -434,6 +456,8 @@ export async function createUnifiedAiMetadata(
      * the filename and numeric features, which yields empty genres and moods.
      */
     audio?: AnalysisExcerpt;
+    /** Active `use_case` term labels; see `buildPrompt`. */
+    useCaseVocabulary?: string[];
   },
 ): Promise<UnifiedAiMetadata> {
   if (!config.geminiApiKey) {
@@ -449,6 +473,7 @@ export async function createUnifiedAiMetadata(
     ...input,
     fallback,
     hasAudio: Boolean(input.audio),
+    useCaseVocabulary: input.useCaseVocabulary ?? [],
   });
   const contents = input.audio
     ? [
@@ -498,6 +523,7 @@ export async function createUnifiedAiMetadata(
           audioSeconds: input.audio?.durationSeconds ?? null,
           audioBytes: input.audio?.bytes.byteLength ?? null,
           audioBitrateKbps: input.audio?.bitrateKbps ?? null,
+          useCaseVocabularySize: input.useCaseVocabulary?.length ?? 0,
         },
         rawResult: rawParsed,
         normalizedResult: normalizeMetadata(parsed, fallback),

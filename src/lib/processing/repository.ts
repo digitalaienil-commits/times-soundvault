@@ -4,6 +4,8 @@ import { randomUUID } from "node:crypto";
 
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 
+import { parseStoredAnalysisResult } from "@/lib/analysis/stored-result";
+
 import type {
   FileTechnicalResultDto,
   NormalizedAnalysisResult,
@@ -796,7 +798,7 @@ export async function loadProcessingAnalysis(
       : null,
     technicalResults,
     issues,
-    normalizedAiResult: row.normalized_result,
+    normalizedAiResult: parseStoredAnalysisResult(row.normalized_result),
     suggestionCount: Number(row.suggestion_count),
   };
 }

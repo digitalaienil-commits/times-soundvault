@@ -8,7 +8,10 @@ import {
 } from "@/lib/audio/analysis-excerpt";
 import { createUnifiedAiMetadata } from "@/lib/analysis/gemini-metadata";
 import { extractLocalMusicFeatures } from "@/lib/analysis/local-features";
-import { persistUnifiedAiMetadata } from "@/lib/analysis/repository";
+import {
+  loadUseCaseVocabulary,
+  persistUnifiedAiMetadata,
+} from "@/lib/analysis/repository";
 import { calculateFileSha256 } from "@/lib/audio/checksum";
 import { measureAudioFile } from "@/lib/audio/ffmpeg";
 import { probeAudioFile } from "@/lib/audio/ffprobe";
@@ -197,12 +200,26 @@ async function processRevision(
         }
       }
 
+      // The use-case taxonomy is what makes a suggestion searchable rather
+      // than decorative, but it is not worth losing an analysis over: an
+      // unreadable taxonomy costs the use cases alone.
+      let useCaseVocabulary: string[] = [];
+      try {
+        useCaseVocabulary = await loadUseCaseVocabulary(pool);
+      } catch (error) {
+        console.warn(
+          `[processing] use-case taxonomy unavailable revision=${job.submissionRevisionId}`,
+          error,
+        );
+      }
+
       const metadata = await createUnifiedAiMetadata(aiConfig, {
         source: master.source,
         probe: master.probe,
         measurements: master.measurements,
         features,
         audio,
+        useCaseVocabulary,
       });
       await persistUnifiedAiMetadata(pool, {
         source: master.source,
