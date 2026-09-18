@@ -19,6 +19,7 @@
     "storage:discover": "node --conditions=react-server --import tsx scripts/storage-discover.ts",
     "storage:migrate": "node --conditions=react-server --import tsx scripts/migrate-storage.ts",
     "storage:describe": "node --conditions=react-server --import tsx scripts/describe-storage.ts",
+    "storage:audit": "node --conditions=react-server --import tsx scripts/audit-storage.ts",
     "deploy:check": "node --conditions=react-server --import tsx scripts/deploy-check.ts",
     "uploads:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-uploads.ts",
     "data:cleanup": "node --conditions=react-server --import tsx scripts/cleanup-runtime-data.ts",

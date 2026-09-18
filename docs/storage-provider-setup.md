@@ -109,6 +109,23 @@ Add the **Title** column to the library view in SharePoint to see them; the
 built-in columns are used because creating custom ones needs
 `Sites.Manage.All`, which uploads do not require.
 
+## Checking the store against the catalogue
+
+The database and the document library can disagree in both directions, and
+neither shows in the application: an upload that failed part-way leaves a row
+pointing at an object that never finished, and an operator script can leave an
+object no row references.
+
+```bash
+pnpm storage:audit
+```
+
+It reports objects with no catalogue row, rows with no object, stored files
+missing their Title label, and size mismatches. It reads only; removing
+anything is a separate deliberate act. A row whose object is missing on a
+**draft** submission is an abandoned upload rather than damage and is reported
+without failing the check; the same on a submitted Track is marked and fails.
+
 ## Moving existing objects after a switch
 
 Changing `STORAGE_PROVIDER` decides where new objects are written and nothing
