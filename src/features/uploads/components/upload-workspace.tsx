@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+
+import { SubmittedPanel } from "./submitted-panel";
 import { Input } from "@/components/ui/input";
 import type {
   CreatedUploadBatch,
@@ -171,6 +173,18 @@ export function UploadWorkspace({
   const abortControllers = useRef(new Map<string, AbortController>());
 
   const activeTransfers = files.some((file) => file.status === "uploading");
+  /**
+   * Every Track in the batch has been handed to review. There is nothing left
+   * for this screen to do, so it stops offering actions that no longer apply
+   * and says what happens next instead.
+   */
+  const allSubmitted = Boolean(
+    createdBatch &&
+    createdBatch.submissions.length > 0 &&
+    createdBatch.submissions.every((submission) =>
+      submittedIds.includes(submission.submissionId),
+    ),
+  );
 
   useEffect(() => {
     setOnline(navigator.onLine);
@@ -1322,7 +1336,14 @@ export function UploadWorkspace({
                             aria-valuenow={progress}
                           >
                             <div
-                              className="h-full bg-brand transition-[width]"
+                              // A full bar in the alert colour reads as a
+                              // failure, which is the opposite of what a
+                              // finished transfer is.
+                              className={`h-full transition-[width] ${
+                                item.status === "completed"
+                                  ? "bg-success"
+                                  : "bg-brand"
+                              }`}
                               style={{ width: `${progress}%` }}
                             />
                           </div>
@@ -1339,7 +1360,12 @@ export function UploadWorkspace({
                     })}
                 </div>
               ) : null}
-              {createdBatch ? (
+              {createdBatch && allSubmitted ? (
+                <SubmittedPanel
+                  batchId={createdBatch.batchId}
+                  submissions={createdBatch.submissions}
+                />
+              ) : createdBatch ? (
                 <div className="rounded-xl border border-border p-4">
                   <p className="font-medium">Draft batch saved</p>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -1380,7 +1406,9 @@ export function UploadWorkspace({
                   </div>
                 </div>
               ) : null}
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div
+                className={`flex flex-col gap-3 sm:flex-row ${allSubmitted ? "hidden" : ""}`}
+              >
                 <Button
                   type="button"
                   variant="outline"

@@ -245,6 +245,15 @@ test("Coordinator corrects grouping, survives partial failure, retries, and subm
     await button.click();
     await expect(button).toHaveCount(0);
   }
+  // Submitting ends the flow, so the screen has to say so and lead somewhere
+  // rather than leaving a finished form with two disabled buttons.
+  await expect(
+    page.getByRole("heading", { name: /submitted for review/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "View my uploads" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Start Upload" })).toBeHidden();
   await page.goto("/my-uploads");
   const newsbed = page
     .locator('section[aria-labelledby="upload-results"]')
