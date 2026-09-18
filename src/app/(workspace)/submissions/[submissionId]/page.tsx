@@ -18,6 +18,7 @@ import {
   getUploadWorkspaceSubmission,
 } from "@/lib/domain/uploads/uploads";
 import { getDatabase } from "@/lib/database/database";
+import { parseCopyrightConfig } from "@/lib/copyright/config";
 import { getCopyrightSummary } from "@/lib/copyright/repository";
 import { loadProcessingAnalysis } from "@/lib/processing/repository";
 import { getSubmissionDecisionSummary } from "@/lib/decisions/decisions";
@@ -85,7 +86,10 @@ export default async function SubmissionDetailPage({
         />
       </div>
       <div className="mt-6">
-        <CopyrightSummary summary={copyright} />
+        <CopyrightSummary
+          summary={copyright}
+          stageEnabled={parseCopyrightConfig().stageEnabled}
+        />
       </div>
       {decisionSummary ? (
         <SubmissionDecisionSummaryPanel

@@ -33,6 +33,12 @@ export interface PublicationGateInput {
     validUntil: string | null;
   } | null;
   copyright: { status: string; outcome: string | null } | null;
+  /**
+   * Whether this deployment requires a copyright outcome before publication.
+   * Recorded in the evidence either way, so a Track published without a check
+   * says so rather than looking like one that passed.
+   */
+  copyrightRequired: boolean;
 }
 
 export interface PublicationGateResult {

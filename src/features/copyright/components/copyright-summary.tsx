@@ -4,8 +4,15 @@ import { StatusLabel } from "./status-label";
 
 export function CopyrightSummary({
   summary,
+  stageEnabled = true,
 }: {
   summary: CopyrightSummaryDto | null;
+  /**
+   * False when this deployment does not require a copyright outcome. Saying so
+   * is the point: an empty panel looks like a check that has not run yet, and
+   * a reviewer would wait for something that is never coming.
+   */
+  stageEnabled?: boolean;
 }) {
   return (
     <section
@@ -22,10 +29,17 @@ export function CopyrightSummary({
           </p>
         </div>
         <span className="rounded-full border border-border px-2.5 py-1 text-xs font-medium">
-          Manual mode
+          {stageEnabled ? "Manual mode" : "Not in use"}
         </span>
       </div>
-      {summary ? (
+      {!stageEnabled ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          Copyright checks are switched off for this deployment, so publication
+          does not wait for one. Published Tracks record that no check was
+          required rather than that one passed. Turn the stage back on with
+          COPYRIGHT_STAGE_ENABLED once a Content ID account is available.
+        </p>
+      ) : summary ? (
         <dl className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
             <dt className="mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">

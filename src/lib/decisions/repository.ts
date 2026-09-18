@@ -24,6 +24,8 @@ import type {
   ReviewFieldDecision,
 } from "@/types/review";
 
+import { parseCopyrightConfig } from "@/lib/copyright/config";
+
 import { evaluatePublicationGate } from "./publication-gate";
 
 type Queryable = Pick<Pool | PoolClient, "query">;
@@ -904,6 +906,7 @@ async function loadPublicationInput(
     acceptedTerms: row.terms,
     rights: row.rights,
     copyright: row.copyright,
+    copyrightRequired: parseCopyrightConfig().stageEnabled,
   });
   return { row, gate };
 }

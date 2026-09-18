@@ -74,9 +74,19 @@ export function evaluatePublicationGate(
     );
   }
 
-  const copyrightStatus = input.copyright?.status ?? "missing";
-  const copyrightOutcome = input.copyright?.outcome ?? null;
-  if (!input.copyright) {
+  // A deployment can run without the copyright stage, and that is a recorded
+  // configuration rather than a silent skip: the evidence says "not_required"
+  // so a Track published this way is distinguishable, years later, from one
+  // that actually passed a check.
+  const copyrightStatus = input.copyrightRequired
+    ? (input.copyright?.status ?? "missing")
+    : "not_required";
+  const copyrightOutcome = input.copyrightRequired
+    ? (input.copyright?.outcome ?? null)
+    : null;
+  if (!input.copyrightRequired) {
+    // No blocker. The stage is switched off for this deployment.
+  } else if (!input.copyright) {
     blockers.push(
       "No copyright check exists for this Revision. Run pnpm copyright:reconcile, then record an outcome in Copyright.",
     );

@@ -1,5 +1,28 @@
 # Copyright operations
 
+## Running without the copyright stage
+
+A deployment with no Content ID account can switch the stage off:
+
+```text
+COPYRIGHT_STAGE_ENABLED=false
+```
+
+Publication then stops waiting for a copyright outcome. Nothing else relaxes:
+title, vocal state, taxonomy and the rights declaration still gate publication
+exactly as before.
+
+This is a recorded decision, not a bypass. The publication gate writes
+`copyrightStatus: "not_required"` into its evidence, so a Track published this
+way stays distinguishable from one that passed a check, and the Submission
+workspace says the stage is off instead of showing an empty panel that looks
+like a check still to come. `pnpm workers` does not start the copyright worker
+while the stage is off, because nothing will enqueue to it.
+
+Turn it back on by removing the variable or setting it to `true`. Tracks
+published while it was off keep their `not_required` evidence; re-checking them
+is a deliberate operational decision, not something the switch does.
+
 ## Commands
 
 ```bash

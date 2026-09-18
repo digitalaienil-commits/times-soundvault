@@ -15,6 +15,7 @@ const ready = {
     validUntil: "2027-08-25",
   },
   copyright: { status: "completed", outcome: "no_claim_observed" },
+  copyrightRequired: true,
 };
 
 describe("evaluatePublicationGate", () => {

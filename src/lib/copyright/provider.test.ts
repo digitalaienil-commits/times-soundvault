@@ -16,6 +16,7 @@ describe("manual YouTube provider", () => {
 describe("YouTube Content ID provider", () => {
   it("reports connected in dry-run mode without credentials", () => {
     const provider = createCopyrightProvider({
+      stageEnabled: true,
       provider: "youtube_content_id",
       root: ".soundvault-copyright",
       maxTracks: 20,
@@ -41,6 +42,7 @@ describe("YouTube Content ID provider", () => {
 
   it("reports disconnected when live mode is requested without credentials", () => {
     const provider = createCopyrightProvider({
+      stageEnabled: true,
       provider: "youtube_content_id",
       root: ".soundvault-copyright",
       maxTracks: 20,
@@ -61,6 +63,7 @@ describe("YouTube Content ID provider", () => {
 
   it("reports connected when live mode is configured with complete credentials", () => {
     const provider = createCopyrightProvider({
+      stageEnabled: true,
       provider: "youtube_content_id",
       root: ".soundvault-copyright",
       maxTracks: 20,

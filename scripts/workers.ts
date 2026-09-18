@@ -20,6 +20,13 @@ const WORKERS = [
   ["embedding", "scripts/embedding-worker.ts"],
 ] as const;
 
+/**
+ * The copyright queue is operator-initiated, so with the stage switched off
+ * nothing will ever enqueue to it. Starting it anyway would sit there
+ * implying a check is coming.
+ */
+const copyrightStageEnabled = process.env.COPYRIGHT_STAGE_ENABLED !== "false";
+
 const children = new Map<string, ChildProcess>();
 let shuttingDown = false;
 
@@ -72,5 +79,11 @@ if (process.env.NODE_ENV === "production") {
   );
   process.exitCode = 1;
 } else {
-  for (const [name, script] of WORKERS) start(name, script);
+  for (const [name, script] of WORKERS) {
+    if (name === "copyright" && !copyrightStageEnabled) {
+      console.log("[copyright] skipped: COPYRIGHT_STAGE_ENABLED=false");
+      continue;
+    }
+    start(name, script);
+  }
 }

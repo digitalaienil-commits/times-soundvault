@@ -1,6 +1,16 @@
 import { z } from "zod";
 
 const copyrightConfigSchema = z.object({
+  /**
+   * Whether a recorded copyright outcome is required before a Track can be
+   * published.
+   *
+   * Turning this off does not skip a step quietly: the gate still reports the
+   * stage, publication evidence records that no check was required, and the
+   * workspace says so rather than showing an empty panel. It is an operator
+   * decision that stays visible, not a bypass.
+   */
+  stageEnabled: z.boolean().default(true),
   provider: z
     .enum(["manual_youtube", "youtube_content_id"])
     .default("manual_youtube"),
@@ -43,6 +53,7 @@ export function parseCopyrightConfig(
     environment.YOUTUBE_DRY_RUN !== "false";
 
   return copyrightConfigSchema.parse({
+    stageEnabled: environment.COPYRIGHT_STAGE_ENABLED !== "false",
     provider: environment.COPYRIGHT_PROVIDER,
     root: environment.COPYRIGHT_TEMP_ROOT,
     maxTracks: environment.COPYRIGHT_BATCH_MAX_TRACKS,
