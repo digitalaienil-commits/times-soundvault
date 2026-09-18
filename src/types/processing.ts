@@ -90,6 +90,8 @@ export interface NormalizedAnalysisResult {
   musicalEra: string | null;
   transformerCaption: string | null;
   freeGenreTags: string[];
+  /** Search keywords: what an editor would type to find this track. */
+  searchTags: string[];
   segmentIntervalSeconds: number | null;
   segments: Array<{
     startSeconds: number;

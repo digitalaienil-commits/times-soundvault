@@ -35,6 +35,7 @@ const SUGGESTION_FIELDS: Array<keyof NormalizedAnalysisResult> = [
   "musicalEra",
   "transformerCaption",
   "freeGenreTags",
+  "searchTags",
   "segmentIntervalSeconds",
   "segments",
 ];

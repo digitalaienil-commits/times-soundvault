@@ -98,6 +98,11 @@ export const geminiMetadataSchema = z.object({
   musicalEra: nullableString,
   transformerCaption: nullableString,
   freeGenreTags: textArray,
+  /**
+   * The words somebody would actually type to find this track. Genre and
+   * mood describe what it is; these describe what it is for.
+   */
+  searchTags: textArray,
   segmentIntervalSeconds: nullableNumber,
   segments: z
     .array(
@@ -204,6 +209,7 @@ function normalizeMetadata(
       ? cleanText(parsed.transformerCaption, 500)
       : fallback.transformerCaption,
     freeGenreTags: cleanArray(parsed.freeGenreTags, 10),
+    searchTags: cleanArray(parsed.searchTags, 15),
     segmentIntervalSeconds:
       parsed.segmentIntervalSeconds ?? fallback.segmentIntervalSeconds,
     segments: parsed.segments
@@ -290,6 +296,9 @@ export function buildLocalMetadataFallback(input: {
     musicalEra: null,
     transformerCaption: caption,
     freeGenreTags: genres,
+    // Without the model there is nothing to derive these from: local features
+    // measure the signal, not what an editor would search for.
+    searchTags: [],
     segmentIntervalSeconds: null,
     segments: [],
   };
@@ -323,6 +332,20 @@ export function buildPrompt(input: {
       instruction: input.hasAudio
         ? "Act as SoundVault's internal metadata assistant. An audio excerpt of this track is attached: listen to it and describe what you actually hear. The title and filename are withheld on purpose: judge genre, mood, instruments and character from the audio alone. Return exactly one JSON object matching outputShape, never an array. Use the attached audio for genres, subgenres, moods, instruments, character, movement and the caption, and prefer the supplied FFmpeg/ffprobe and Essentia measurements for tempo, key and loudness. Never infer content from the filename alone. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] only when the audio genuinely does not support a value."
         : "Act as SoundVault's internal metadata assistant. Return exactly one JSON object matching outputShape, never an array. No audio is attached, so describe only what the supplied FFmpeg/ffprobe facts and Essentia music features support, and do not guess genres, moods or instruments from the filename. Do not make rights, copyright, ownership, or approval claims. Prefer null or [] when uncertain.",
+      // `outputShape` is a bare list of names, so any field given prose
+      // guidance is the only one the model is told how to answer. Guiding one
+      // field alone emptied genres and moods on a real track, so every field
+      // that needs a register gets a line, and none of them gets an essay.
+      fieldGuidance: {
+        genres:
+          "Broad musical style. Name the narrowest accurate one; avoid umbrella answers like world music or fusion.",
+        subgenres:
+          "More specific style, including regional forms where the audio supports it.",
+        moods: "Emotional character of the music itself.",
+        instruments: "Instruments and sound sources you can actually hear.",
+        searchTags:
+          '8 to 15 lowercase keywords an editor would type to find this track: what it is FOR, not what it is. Usage, occasion, setting, energy feel. Prefer "breaking news sting" over "news". Do not repeat genres and moods verbatim.',
+      },
       outputShape: Object.keys(geminiMetadataSchema.shape),
       // With audio attached the title and filename are deliberately withheld.
       // Leaving them in steered the model hard: a file named "...breaking news

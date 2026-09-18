@@ -147,6 +147,25 @@ export function ProcessingAnalysis({
                 {analysis.normalizedAiResult.instruments.join(", ") || "None"}
               </dd>
             </div>
+            <div className="sm:col-span-2">
+              <dt className="text-muted-foreground">Search tags</dt>
+              <dd>
+                {analysis.normalizedAiResult.searchTags.length > 0 ? (
+                  <ul className="mt-1 flex flex-wrap gap-1.5">
+                    {analysis.normalizedAiResult.searchTags.map((tag) => (
+                      <li
+                        key={tag}
+                        className="rounded-full border border-border px-2.5 py-0.5 text-xs"
+                      >
+                        {tag}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  "None"
+                )}
+              </dd>
+            </div>
             <div>
               <dt className="text-muted-foreground">Tempo / key</dt>
               <dd>
