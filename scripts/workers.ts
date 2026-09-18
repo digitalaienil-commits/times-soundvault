@@ -1,5 +1,11 @@
 import { spawn, type ChildProcess } from "node:child_process";
 
+import { loadEnvConfig } from "@next/env";
+
+// The child workers each load .env.local themselves, but this supervisor has
+// to read it too: it decides which of them to start.
+loadEnvConfig(process.cwd());
+
 /**
  * Runs the continuous background workers in one terminal for local development.
  *
