@@ -20,11 +20,11 @@ const uploadEnvironmentSchema = z.object({
   UPLOAD_MAX_STEMS_PER_TRACK: positiveInteger(32),
   UPLOAD_CONCURRENCY: positiveInteger(3),
   UPLOAD_ADVISORY_MAX_DURATION_SECONDS: positiveInteger(1800),
-  // Serverless platforms cap the request body: Vercel rejects anything over
-  // 4.5 MB, and a larger chunk fails the whole transfer with a 413 that looks
-  // like a broken upload. The default fits inside that; a self-hosted server
-  // with no such limit can raise it.
-  UPLOAD_CHUNK_BYTES: positiveInteger(4 * 1024 * 1024),
+  // Two limits apply at once. Microsoft Graph rejects any non-final chunk
+  // that is not a multiple of 320 KiB, and a serverless platform rejects a
+  // request body over its own cap — Vercel's is 4.5 MB. The default is the
+  // largest multiple of 320 KiB that stays comfortably inside that cap.
+  UPLOAD_CHUNK_BYTES: positiveInteger(12 * 320 * 1024),
   ONEDRIVE_TENANT_ID: z.string().trim().optional(),
   ONEDRIVE_CLIENT_ID: z.string().trim().optional(),
   ONEDRIVE_CLIENT_SECRET: z.string().trim().optional(),
@@ -52,6 +52,22 @@ export interface StorageConfig {
     driveId: string;
     rootItemId: string;
   };
+}
+
+/**
+ * Microsoft Graph requires every chunk except the last to be a multiple of
+ * 320 KiB and rejects the whole transfer otherwise, so a configured size is
+ * rounded down to one rather than trusted. Rounding down keeps it inside
+ * whatever request-body cap the operator chose it for.
+ */
+const GRAPH_CHUNK_UNIT = 320 * 1024;
+
+export function chunkBytesFrom(requested: number): number {
+  const bounded = Math.min(
+    Math.max(requested, GRAPH_CHUNK_UNIT),
+    64 * 1024 * 1024,
+  );
+  return Math.floor(bounded / GRAPH_CHUNK_UNIT) * GRAPH_CHUNK_UNIT;
 }
 
 function requiredOneDriveValue(
@@ -91,10 +107,7 @@ export function parseStorageConfig(
     maxStemsPerTrack: parsed.UPLOAD_MAX_STEMS_PER_TRACK,
     concurrency: Math.min(parsed.UPLOAD_CONCURRENCY, 3),
     advisoryMaxDurationSeconds: parsed.UPLOAD_ADVISORY_MAX_DURATION_SECONDS,
-    chunkBytes: Math.min(
-      Math.max(parsed.UPLOAD_CHUNK_BYTES, 256 * 1024),
-      64 * 1024 * 1024,
-    ),
+    chunkBytes: chunkBytesFrom(parsed.UPLOAD_CHUNK_BYTES),
   };
   // `storage_backend` is recorded per file, so a server whose configured
   // provider is `local` still has to read objects written to OneDrive before

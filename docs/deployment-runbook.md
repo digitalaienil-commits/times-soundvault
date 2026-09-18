@@ -154,13 +154,15 @@ and prints no secret.
 
 ### The 4.5 MB request limit
 
-Vercel rejects any request body over 4.5 MB. Uploads are chunked, and
-`UPLOAD_CHUNK_BYTES` defaults to 4 MiB so a chunk fits. Raising it above
-4.5 MB on Vercel makes every upload fail on its first chunk with a 413;
-`deploy:check` refuses that combination. A self-hosted deployment behind its
-own proxy can raise it.
+Vercel rejects any request body over 4.5 MB, and Microsoft Graph rejects any
+non-final chunk that is not a multiple of 320 KiB. Both apply to the same
+number, and missing either breaks every upload: a size chosen only to fit the
+request cap fails at the provider, and a size chosen only for the provider
+fails at the edge. `UPLOAD_CHUNK_BYTES` defaults to 12 x 320 KiB, which
+satisfies both, and any configured value is rounded down to a valid multiple.
+`deploy:check` refuses a size above the Vercel cap.
 
-A 2 GiB Master is roughly 500 chunk requests at that size. Each one passes
+A 2 GiB Master is roughly 550 chunk requests at that size. Each one passes
 through a function, which is the cost of not exposing the provider's upload URL
 to the browser.
 
